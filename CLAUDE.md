@@ -8,12 +8,22 @@
 
 ## 🔖 STATUS (update this every session)
 
-- **Current phase:** Planning complete. Conversation/plan saved as Word docs in `docs/`.
-- **Last done (2026-06-17):** Downloaded & verified the real dataset; locked all planning
-  decisions; generated 7 `.docx` planning documents in `docs/`.
-- **➡️ NEXT STEP:** Git work — `git init` the repo and create the full folder structure.
-  Then begin **Notebook 01 (data cleaning)**.
-- **Not yet started:** git init, notebooks, src/ modules, any analysis code.
+- **Current phase:** Repo restructured to a clean slate. File structure for the actual
+  analysis is intentionally NOT decided yet (the old notebooks/src/reports/tests scaffolding
+  was rejected and deleted).
+- **Last done (2026-06-18):** Cleaned the repo down to bare essentials. Root now holds only
+  `.gitignore`, `CLAUDE.md`, `requirements.txt`, and `data/` (with the 45MB dataset).
+  All planning material consolidated under `planning/docs/`. Deleted empty scaffolding
+  dirs (notebooks/, src/, reports/, tests/). Pushed to private repo
+  `SajalHRX/customer-segmentation` (branch `main`).
+- **Current tree:** `.gitignore`, `CLAUDE.md`, `requirements.txt`, `data/raw/` (dataset),
+  `planning/docs/` (7 .docx + _generate_docs.py).
+- **➡️ NEXT STEP:** Decide the new analysis file structure with Sajal, then begin
+  **data cleaning**: load both xlsx sheets, handle 22.8% missing Customer ID,
+  `C`-cancellations, negative-qty returns → clean transaction table.
+- **Not yet started:** new structure, any analysis code/notebooks.
+- **GitHub auth note:** `gh` active account = SajalHRX (personal). Switch back for LinkedIn
+  work with `gh auth switch -u sajsingh_LinkedIn`.
 
 ---
 
