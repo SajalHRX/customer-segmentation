@@ -127,7 +127,11 @@ table(d, ["Document", "Contents"], [
     ["04_Column_Importance_Map", "Role and importance of every column; the feature-engineering principle"],
     ["05_Problem_Formulation", "Formal problem statement, objectives, hypotheses, expected results"],
     ["06_Repo_Structure_and_Roadmap", "Planned repo layout, notebooks, methods map, data flow"],
+    ["07_Problem_Framing_and_Scope", "Design discussion #1 - chosen framing (retention/budget), honest scope boundaries"],
+    ["08_Time_Window_and_CLV_Validation", "Design discussion #2 - anchor date, temporal holdout, multi-cutoff experiment"],
 ])
+para(d, "Documents 07+ are DESIGN DISCUSSIONS - decisions worked out topic-by-topic after planning, "
+        "each recording the reasoning behind a methodological choice.")
 save(d, "00_Project_Overview.docx")
 
 
@@ -450,5 +454,139 @@ bullet(d, "Build phase by phase; review and understand each before moving on.")
 bullet(d, "Every methodological choice must be explainable.")
 bullet(d, "Next concrete step: Notebook 01 (cleaning).")
 save(d, "06_Repo_Structure_and_Roadmap.docx")
+
+
+# ---------------------------------------------------------------------------
+# 07 - PROBLEM FRAMING & SCOPE  (Design discussion #1, 18 June 2026)
+# ---------------------------------------------------------------------------
+d = new_doc("Problem Framing & Scope", "Design discussion #1 - what decision the segmentation drives")
+para(d, "Added 18 June 2026. This doc records the first design discussion: pinning down WHO uses the "
+        "segmentation and WHAT decision it resolves, before writing any code.")
+
+h1(d, "The question we had to answer first")
+para(d, "\"Who runs this business, and what decision does the segmentation help them make?\" The data is a "
+        "UK-based online gift/homeware retailer (2009-2011), wholesale + retail mix, mostly UK, many repeat "
+        "buyers. That context constrains which framings are HONEST - we must not invent signals the data "
+        "does not contain (no ad clicks, no web sessions, pure transactions).")
+
+h1(d, "Three framings considered")
+table(d, ["Framing", "Idea", "Verdict"], [
+    ["A. Retention & budget allocation", "Group by behaviour so a fixed marketing budget goes where it pays off",
+     "CHOSEN - every planned technique (RFM, validated clustering, CLV) has a clear job"],
+    ["B. VIP / high-value identification", "Find the ~20% driving ~80% of revenue; build a loyalty tier",
+     "Too narrow - risks collapsing to 'rank by Monetary', undersells clustering"],
+    ["C. Product / market expansion", "Segment to find underserved customer types or geographies",
+     "Weakest - geography is 92% UK; product columns deliberately down-weighted"],
+])
+
+h1(d, "Chosen framing (A) - locked problem statement")
+para(d, "A UK-based online retailer has a finite marketing/CRM budget and currently treats all customers "
+        "alike. Using only transactional history, segment customers by purchasing behaviour (RFM + tenure + "
+        "basket value), validate the segments are real and stable, estimate each customer's future value "
+        "probabilistically (CLV), and recommend a differentiated action per segment - so retention/marketing "
+        "spend follows expected return.")
+
+h1(d, "Stress-test: 'If I were Ajio, would this resolve a real problem?'")
+para(d, "Yes - but a SPECIFIC problem, not the whole business. Behavioural (RFM) segmentation is genuinely "
+        "deployed in production CRM (Klaviyo, Salesforce Marketing Cloud, etc.). It resolves: 'Given a finite "
+        "budget, which customers get which treatment?'")
+h2(d, "What framing A RESOLVES (per segment, the decision it answers)")
+table(d, ["Segment (behaviour)", "Decision resolved"], [
+    ["Champions (recent, frequent, high spend)", "Don't waste discounts - early access, loyalty perks. Protect."],
+    ["At-risk loyalists (were active, gone quiet)", "Send win-back offer now - worth saving. Intervene."],
+    ["New customers (1 recent order)", "Nurture into a second purchase. Onboard."],
+    ["Bargain one-timers (low value, churned)", "Don't chase. Deprioritise."],
+    ["Big spenders, infrequent", "Re-engage at the right cadence. Reactivate."],
+])
+h2(d, "What framing A does NOT solve (state this honestly in interviews)")
+bullet(d, "WHAT product to recommend to a user -> that is a recommendation system (collaborative filtering).")
+bullet(d, "WHY a customer churned -> needs richer signals (browsing, returns, complaints).")
+bullet(d, "WHICH channel / creative converts -> needs experimentation (A/B tests).")
+para(d, "It answers 'who, and how much effort' - not 'what exactly to show them'. Those are complementary "
+        "layers of the personalisation stack.")
+
+h1(d, "Why this is the right scope for our data")
+para(d, "Our data is purely transactional (invoices, quantities, prices, dates) - no clicks, no product "
+        "views, no ad data. So we CAN do behavioural value/lifecycle segmentation rigorously (framing A); we "
+        "CANNOT honestly build a recommender or churn-cause model without inventing signals. Framing A is "
+        "therefore the most ambitious HONEST framing the data supports - and saying out loud what the data "
+        "can and cannot answer is itself a mark of analytical judgement.")
+save(d, "07_Problem_Framing_and_Scope.docx")
+
+
+# ---------------------------------------------------------------------------
+# 08 - TIME WINDOW & CLV VALIDATION  (Design discussion #2, 18 June 2026)
+# ---------------------------------------------------------------------------
+d = new_doc("Time Window & CLV Validation", "Design discussion #2 - the anchor date and how we validate CLV")
+para(d, "Added 18 June 2026. Records two linked decisions: what 'today' means for Recency/CLV, and how the "
+        "probabilistic CLV model is validated out-of-sample.")
+
+h1(d, "The anchor date ('what is today?')")
+para(d, "Recency = days since the customer's last purchase - but days since WHEN? The real today (2026) is "
+        "useless: the data ends 09 Dec 2011, so every customer would look ~14 years lapsed. The anchor must "
+        "sit ON OR AFTER the last transaction, or some customers get negative recency.")
+table(d, ["Option", "Verdict"], [
+    ["Real today (2026)", "Rejected - no recency variation that matters"],
+    ["Last txn date (2011-12-10)", "Valid, but slightly arbitrary mid-month point"],
+    ["End-of-FY March 2012", "Rejected - no Jan-Mar 2012 data; adds 3 empty months of fake lapse"],
+    ["01 Jan 2012  (CHOSEN)", "Clean 'turn-of-year snapshot'; satisfies >= last txn; uniform ~3-week offset"],
+])
+para(d, "Decision: anchor = 01 Jan 2012. Narrative: 'Standing at the start of 2012, looking back over all "
+        "history.' The uniform offset does not distort the RELATIVE recency ordering that clustering uses.")
+
+h1(d, "Two DIFFERENT validations (do not confuse them)")
+table(d, ["Validation", "Validates", "Method"], [
+    ["Cluster validation (later step)", "Are the SEGMENTS real and stable?", "silhouette, gap statistic, bootstrap"],
+    ["CLV model validation (this doc)", "Does the PREDICTIVE model actually predict?", "temporal holdout"],
+])
+
+h1(d, "CLV validation = temporal holdout (train on the past, test on the future)")
+para(d, "The point of BG/NBD + Gamma-Gamma is to predict future behaviour, so we hide the future and check "
+        "the model's guess.")
+numbered(d, "Split the timeline at a cutoff into CALIBRATION (fit) and HOLDOUT (test) periods.")
+numbered(d, "Fit BG/NBD using ONLY the calibration period (frequency, recency, tenure as of the cutoff).")
+numbered(d, "Predict each customer's expected number of purchases in the holdout window.")
+numbered(d, "Compare predicted vs actual holdout behaviour. (lifetimes.calibration_and_holdout_data() does the split.)")
+h2(d, "Metrics recorded")
+bullet(d, "Calibration plot: predicted vs actual per frequency-bin - a good model hugs the diagonal (main visual).")
+bullet(d, "Aggregate: total predicted vs total actual transactions in holdout.")
+bullet(d, "Per-customer error: MAE / RMSE, normalised per month of holdout so cutoffs are comparable.")
+bullet(d, "Fitted BG/NBD parameters (r, alpha, a, b): do they stay stable across splits? Big swings = fragile.")
+bullet(d, "Gamma-Gamma: predicted vs actual avg order value; AND check its key assumption that frequency and "
+          "monetary value are ~uncorrelated (compute the correlation; should be near zero).")
+
+h1(d, "Experiment: multiple cutoffs (holdouts of 3, 6, 9 months)")
+para(d, "Rather than one holdout, run three to turn validation into a sensitivity analysis (and for practice).")
+table(d, ["Holdout", "Cutoff (approx)", "Calibration", "Prediction horizon"], [
+    ["3 months", "~2011-09-09", "~21 months (more training)", "short -> easier to predict"],
+    ["6 months", "~2011-06-09", "~18 months", "medium"],
+    ["9 months", "~2011-03-09", "~15 months (less training)", "long -> harder to predict"],
+])
+h2(d, "The trap to avoid (the key insight)")
+para(d, "Moving the cutoff changes TWO things at once: calibration length AND prediction horizon. The "
+        "3-month model will almost certainly show lower raw error - not because it is a better model, but "
+        "because predicting 3 months ahead is easier and it had more training data. So do NOT rank models by "
+        "raw MAE and declare '3-month is best' - that is the wrong conclusion.")
+h2(d, "How to read it honestly")
+bullet(d, "Treat each cutoff as a different question ('how well does it predict 3 / 6 / 9 months out?'); the "
+          "interesting result is how GRACEFULLY accuracy decays with horizon, not which wins.")
+bullet(d, "Judge CALIBRATION (predicted vs actual by bin) and PARAMETER STABILITY, which are far more "
+          "horizon-fair than raw error. Diagonal-hugging across all three cutoffs = strong robustness evidence.")
+bullet(d, "Caveat: the customer cohort shifts slightly per cutoff (anyone whose first purchase is after the "
+          "cutoff is excluded from calibration). Note this in the writeup.")
+h2(d, "Engineering note")
+para(d, "Build a reusable function evaluate_cutoff(months) -> {metrics, plot}, run over [3, 6, 9], collected "
+        "into one comparison table + a row of calibration small-multiples. Cleaner than copy-paste and "
+        "demonstrates a reproducible experiment design.")
+
+h1(d, "How validation fits with the production model")
+bullet(d, "Segmentation: fit on FULL history (all data up to 2012-01-01) for maximum signal.")
+bullet(d, "CLV validation: a SEPARATE holdout experiment to prove the model is trustworthy.")
+bullet(d, "Final CLV numbers attached to customers/segments: refit on full history once validation earns trust.")
+para(d, "So the holdout is a credibility experiment; the production CLV uses all the data. 'The model stays "
+        "calibrated from 3 to 9 months and its parameters are stable' is a much stronger claim than a single "
+        "holdout.")
+save(d, "08_Time_Window_and_CLV_Validation.docx")
+
 
 print("\nAll documents generated in:", OUT_DIR)

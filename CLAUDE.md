@@ -27,6 +27,19 @@
 
 ---
 
+## Problem statement (LOCKED 2026-06-18 — discussion #1)
+
+A UK-based online retailer has a finite marketing/CRM budget and currently treats all
+customers alike. Using **only transactional history**, segment customers by purchasing
+behaviour (RFM + tenure + basket value), validate the segments are real and stable, estimate
+each customer's future value probabilistically (CLV), and recommend a differentiated action
+per segment — so retention/marketing spend follows expected return.
+
+**Scope (honest boundaries):** answers *who to target and how much effort* — NOT *what
+product to recommend* (recommender systems) or *why they churned* (needs richer signals).
+Framing chosen because it is the most ambitious framing the purely-transactional data
+honestly supports.
+
 ## What this project is
 
 A rigorous, explainable **customer-segmentation** project for a **CV / portfolio** piece
