@@ -133,6 +133,8 @@ table(d, ["Document", "Contents"], [
     ["10_Choosing_and_Validating_K", "Design discussion #4 - choosing K (elbow/silhouette/gap/CH/DB) + stability (bootstrap/consensus)"],
     ["11_Clustering_Method_Comparison", "Design discussion #5 - K-Means vs GMM vs hierarchical; the continuum question; ARI/BIC"],
     ["12_CLV_and_Segments_Integration", "Design discussion #6 - CLV as a separate post-hoc layer joined on Customer ID; the segment x CLV grid"],
+    ["13_Segment_Profiling_and_Validation", "Design discussion #7a - profiling clusters into named personas; validating they are real (3 tiers)"],
+    ["14_Recommendations_and_Success_Criteria", "Design discussion #7b - the action/value-at-stake grid; what 'good' means for the project"],
 ])
 para(d, "Documents 07+ are DESIGN DISCUSSIONS - decisions worked out topic-by-topic after planning, "
         "each recording the reasoning behind a methodological choice.")
@@ -935,6 +937,185 @@ bullet(d, "Discounting: optionally apply DCF (a pound next year is worth less th
 bullet(d, "Bonus signal: BG/NBD also outputs P(alive), a per-customer churn-risk probability that complements "
           "the segment's lifecycle read.")
 save(d, "12_CLV_and_Segments_Integration.docx")
+
+
+# ---------------------------------------------------------------------------
+# 13 - SEGMENT PROFILING & VALIDATION  (Design discussion #7a, 18 June 2026)
+# ---------------------------------------------------------------------------
+d = new_doc("Segment Profiling & Validation", "Design discussion #7a - turning clusters into named, validated personas")
+para(d, "Added 18 June 2026. Once clustering produces labels, this is how we turn them into named personas "
+        "(Section 1) and PROVE the personas are real and distinct (Section 2). Companion doc 14 covers "
+        "recommendations + success criteria.")
+
+h1(d, "Section 1 - From clusters to personas (profiling discipline)")
+para(d, "A cluster label (0,1,2,3) is meaningless until characterised. Two rules.")
+h2(d, "Rule (a) - profile on ORIGINAL units, not the modelling space")
+para(d, "Clustering ran on scaled log-features; those centroids are uninterpretable ('log-monetary z=0.8' "
+        "means nothing to a marketer). For naming, invert back to RAW units and report per-segment MEDIANS "
+        "(robust to residual skew). The segment profile table, with the business reason for each column:")
+table(d, ["Column", "Business meaning (what decision it drives)"], [
+    ["Segment", "Unit of action - one segment = one playbook + one budget line"],
+    ["n (%)", "Size / reach - sizes the opportunity & cost; whether a dedicated playbook is worth it; flags non-viable tiny groups"],
+    ["Median Recency (days)", "Churn-risk / urgency - timing of intervention; which lifecycle stage"],
+    ["Median Frequency (orders)", "Loyalty / habit strength - contact cadence, cross-sell, loyalty-programme fit"],
+    ["Median Monetary (GBP)", "Realised value to date - tiering; how much margin there is to fund perks"],
+    ["Tenure", "Relationship maturity - context for the rest (new-and-rising vs long-loyal); sharpens churn read"],
+    ["Rev share (current)", "Revenue concentration TODAY - what is at risk if the segment churns; justifies defensive spend"],
+    ["CLV share (predicted)", "Future-value concentration - where value is heading; justifies growth spend"],
+])
+para(d, "The most decision-relevant signal is the GAP between Rev share (now) and CLV share (future):")
+table(d, ["Pattern", "Reading", "Action"], [
+    ["High rev share, low CLV share", "Declining segment - big today, fading", "Harvest, do not over-invest"],
+    ["Low rev share, high CLV share", "Rising segment - small today, growing", "Invest ahead of the curve"],
+    ["High both", "The genuine core", "Protect at all costs"],
+    ["Low both", "Marginal", "Deprioritise"],
+])
+h2(d, "How n% is calculated")
+bullet(d, "n_k = distinct CUSTOMERS in segment k, computed on the one-row-per-customer table (NOT invoice "
+          "lines). %_k = n_k / N_total x 100.")
+bullet(d, "Denominator N_total = the CLEANED, clustered customer base (~5,900) - not all transactions or all "
+          "humans who ever transacted. State the scope explicitly: '% of analysable customers'.")
+bullet(d, "Hard vs soft: K-Means/hierarchical give an unambiguous count. GMM is soft -> use the hard (argmax "
+          "responsibility) count for comparability across methods; the mixing weight pi_k is the model's own "
+          "prevalence view. Report hard counts in the profile table.")
+h2(d, "Rule (b) - name AFTER inspecting the profile, not before")
+para(d, "Derive the name from the behavioural signature; do NOT impose textbook personas "
+        "(Champions/Loyal/Potential/At-risk/Hibernating) and bend the data to fit. 'Recent + frequent + "
+        "high-spend' earns 'Champion'; a 'frequent but low-value wholesaler' group is named for what it "
+        "actually is. Forcing canonical names onto non-matching clusters is confirmation bias - a real "
+        "failure mode.")
+
+h1(d, "Section 2 - Validating the personas are real and distinct")
+para(d, "Separate from stability (#4: 'do the clusters reproduce?'). This asks: 'are the named segments "
+        "genuinely different, on dimensions that matter, and would an independent method agree?'")
+h2(d, "The circularity problem and the three tiers of evidence")
+para(d, "Testing whether segments differ on the features used to cluster is near-circular (clustering "
+        "optimises exactly that). So evidence comes in tiers:")
+table(d, ["Tier", "Test", "Strength"], [
+    ["1 (weak/circular)", "Separation on the CLUSTERING features", "Confirms + identifies which features; mildly circular"],
+    ["2 (strong)", "Separation on EXTERNAL variables the clustering never saw", "Non-circular proof"],
+    ["3 (strong)", "Agreement with an INDEPENDENT labelling (rule-based RFM)", "Corroboration"],
+])
+h2(d, "(A) Separation on clustering features - quantify, but read carefully")
+bullet(d, "Omnibus = Kruskal-Wallis (non-parametric ANOVA on ranks) - chosen because RFM is skewed and "
+          "heteroscedastic even after log, violating ANOVA's assumptions. Being rank-based, it gives IDENTICAL "
+          "results on raw/log/scaled features (no 'which space?' choice). A rejection means the DISTRIBUTIONS "
+          "differ (not strictly the medians, since segment shapes differ).")
+bullet(d, "Large-n caveat: at ~5,900 customers everything is 'significant' (p~0); p-values are uninformative. "
+          "Report EFFECT SIZE: eta^2_H = (H - k + 1)/(N - k) in [0,1] (or epsilon^2). Rank features by it -> "
+          "the discriminative-feature ranking that justifies the names (usually Recency & Monetary; Tenure weak).")
+bullet(d, "Post-hoc = Dunn's test (uses the pooled KW ranks) with Holm correction -> which segment PAIRS "
+          "differ; pairwise magnitude via Cliff's delta. A pair small on ALL features = secret twins = K too "
+          "high (feeds back to discussion #4).")
+bullet(d, "Honest framing: this tier is DIAGNOSTIC (which features, which pairs collapse), not proof of 'real'.")
+h2(d, "(B) Multivariate / classifier-based separation")
+bullet(d, "(A) tests one feature at a time; segments can overlap on each feature ALONE yet separate in "
+          "COMBINATION (e.g. high-frequency/low-basket vs low-frequency/high-basket sit in different corners).")
+bullet(d, "Centroid separation: distance between segment centres in the full scaled space.")
+bullet(d, "Classifier check: hide the labels, train a simple model (logistic / random forest) to predict the "
+          "segment from features. High CROSS-VALIDATED accuracy = the segments are separable; the feature "
+          "importances double as interpretation (which features define each segment, multivariate). Still "
+          "tier-1 (same features) - CV ensures we measure real separability, not memorisation.")
+h2(d, "(C) External-variable check - the GOLD STANDARD (non-circular)")
+para(d, "Do the segments ALSO differ on variables the clustering never saw? If groups built only from "
+        "R/F/M/Tenure also differ in what they buy or their future value, that difference is genuinely "
+        "discovered, not baked in. (Analogy: sort people by height, then find the groups also differ in the "
+        "sport they play - a real finding, because you did not sort on sport.)")
+table(d, ["External variable", "Question", "Source (excluded from clustering)"], [
+    ["Predicted CLV", "Differ in future value?", "the separate BG/NBD model"],
+    ["Product mix", "Buy different things?", "StockCode / Description"],
+    ["Country", "Geographic skew?", "Country"],
+    ["Return rate", "Return more/less?", "cancellations / returns"],
+])
+bullet(d, "Numeric externals (CLV, return rate) -> effect-size comparison (now NON-circular). Categorical "
+          "(product, country) -> cross-tab + chi-square / Cramer's V.")
+bullet(d, "Example: segments built only from R/F/M/Tenure show avg predicted CLV of Champions 800 > Loyal 300 "
+          "> At-risk 150 > One-timers 20 (GBP) - orderly differences on a variable never seen -> real (this is "
+          "also the doc-12 internal-consistency check).")
+bullet(d, "NULL result meaning: if segments differ on NO external variable, they may be arbitrary slices of "
+          "the spend axis with no deeper meaning - report that honestly.")
+bullet(d, "Interview line: 'I checked separation on predicted value, product mix, and geography - things the "
+          "model never saw - not just the features I clustered on. That is evidence the segments are real "
+          "customer types, not an artifact of where I drew the lines.'")
+h2(d, "(Tier 3) Agreement with rule-based RFM")
+bullet(d, "Build the classic RFM quintile scores (R/F/M each 1-5) -> rule-based segments, INDEPENDENT of the "
+          "clustering. Cross-tab cluster vs rule segment; association via Cramer's V (or ARI). High agreement "
+          "corroborates; structured divergence = the clustering REFINING the rules' arbitrary quintile cutoffs "
+          "(a finding, not a fault).")
+h2(d, "Visuals (observability)")
+bullet(d, "Snake plot (standardised segment medians as lines - the canonical RFM visual); radar / "
+          "parallel-coordinates; PCA scatter coloured by segment (note: 2-D PCA UNDERSTATES separation, so "
+          "overlap there is not proof of non-separation); violin/box per discriminative feature.")
+h2(d, "Pitfalls")
+bullet(d, "Treating p-values as evidence at this n; claiming 'medians differ' when shapes differ; circular "
+          "testing on clustering features only; over-reading 2-D PCA overlap; validating tiny segments.")
+save(d, "13_Segment_Profiling_and_Validation.docx")
+
+
+# ---------------------------------------------------------------------------
+# 14 - RECOMMENDATIONS & SUCCESS CRITERIA  (Design discussion #7b, 18 June 2026)
+# ---------------------------------------------------------------------------
+d = new_doc("Recommendations & Success Criteria", "Design discussion #7b - acting on segments, and defining 'good'")
+para(d, "Added 18 June 2026. Companion to doc 13. Section 3 turns validated, named segments into marketing "
+        "actions; Section 4 defines what success means for an unsupervised, portfolio project.")
+
+h1(d, "Section 3 - Recommendations / the action grid")
+para(d, "We now have named, validated segments + each customer's predicted CLV. The question: what do we DO "
+        "about each segment, and how much do we spend?")
+h2(d, "Rules")
+bullet(d, "One segment, one clear action (Protect / Grow / Nurture / Win-back / Deprioritise) - clarity is the "
+          "deliverable; do not hand marketing ten vague ideas per group.")
+bullet(d, "Spend follows VALUE AT STAKE (revenue share + CLV share), not headcount.")
+bullet(d, "Refine with the segment x CLV grid (doc 12): within a segment, high-CLV vs low-CLV members get "
+          "different intensity of the same action.")
+h2(d, "Action table (example)")
+table(d, ["Segment", "Action", "Why", "Spend"], [
+    ["Champions (recent, high value)", "Protect - VIP perks, early access", "they'll buy anyway; do NOT discount (burns margin)", "moderate, defensive"],
+    ["At-risk + high CLV", "Win-back NOW", "most recoverable value - the top-priority cell", "high per customer"],
+    ["New / Potential", "Nurture to 2nd purchase", "onboarding, gentle incentive", "scaled to upside"],
+    ["One-timer + low CLV", "Deprioritise", "spend > worth", "near zero"],
+])
+h2(d, "Value at stake beats headcount (example)")
+table(d, ["Segment", "% of customers", "% of future CLV", "Priority"], [
+    ["At-risk", "15%", "25%", "High - small group, big value leaking"],
+    ["One-timers", "40%", "5%", "Low - huge group, little value"],
+])
+para(d, "Prioritising by headcount would pour budget into the 40% one-timers who are barely worth anything. "
+        "Money on the line is the right lens.")
+h2(d, "Optional ROI framing (only if kept honest)")
+para(d, "A rough estimate ('win-back at 10% conversion recovers ~GBP X of predicted CLV for ~GBP Y spend') "
+        "shows business reasoning, but MUST be flagged hypothetical - we have no campaign-response data. State "
+        "the assumption out loud or it becomes the dishonesty we keep avoiding.")
+h2(d, "Mistakes the grid prevents")
+bullet(d, "Discounting Champions (margin lost on people who would have bought anyway).")
+bullet(d, "Spending equally across segments (the whole point is UNequal spend).")
+bullet(d, "Chasing low-value churned customers (sunk-cost spending).")
+
+h1(d, "Section 4 - What 'good' looks like (success criteria)")
+para(d, "Unsupervised -> there is no accuracy score. Define success deliberately, or you reach for a fake one "
+        "(a high silhouette, pretty clusters). 'Good' = five things, all of which we have built toward:")
+table(d, ["#", "Criterion", "Met when"], [
+    ["1", "Validated", "stable (#4) + separated on external variables (2C)"],
+    ["2", "Interpretable", "each segment has a clear, nameable profile in raw units"],
+    ["3", "Internally consistent", "CLV concentrates in the Champion segment (doc 12)"],
+    ["4", "Actionable", "every segment -> a differentiated action + quantified value at stake"],
+    ["5", "Honest", "surprises & limitations reported, not hidden"],
+])
+h2(d, "What 'good' beats")
+bullet(d, "GOOD (even if modest): 'The data is largely a continuum; only 3 robust segments survive resampling "
+          "and differ on predicted CLV and product mix - here is each profile, action, and value at stake.'")
+bullet(d, "BAD (even if flashy): '6 crisp, colourful segments named from a textbook' that dissolve under "
+          "bootstrap, with a made-up ROI.")
+para(d, "The modest-but-honest result is the SUCCESSFUL one. For a PORTFOLIO piece especially, the grade comes "
+        "from the JUDGEMENT on display (validate, compare methods, admit the continuum, report what failed) - "
+        "not from the cluster count or a pretty chart.")
+h2(d, "Final deliverables ('done', physically)")
+bullet(d, "The customer-level table: each customer -> segment + predicted CLV + recommended action.")
+bullet(d, "The segment profile table (doc 13, Section 1).")
+bullet(d, "The action / value-at-stake grid (Section 3).")
+bullet(d, "The validation evidence (stability + separation + cross-method agreement).")
+bullet(d, "A written narrative tying it all back to the problem statement.")
+save(d, "14_Recommendations_and_Success_Criteria.docx")
 
 
 print("\nAll documents generated in:", OUT_DIR)
