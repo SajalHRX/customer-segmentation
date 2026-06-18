@@ -130,6 +130,8 @@ table(d, ["Document", "Contents"], [
     ["07_Problem_Framing_and_Scope", "Design discussion #1 - chosen framing (retention/budget), honest scope boundaries"],
     ["08_Time_Window_and_CLV_Validation", "Design discussion #2 - anchor date, temporal holdout, multi-cutoff experiment"],
     ["09_Feature_Treatment", "Design discussion #3 - skew/log, scaling (Robust vs Standard), weighting & redundancy"],
+    ["10_Choosing_and_Validating_K", "Design discussion #4 - choosing K (elbow/silhouette/gap/CH/DB) + stability (bootstrap/consensus)"],
+    ["11_Clustering_Method_Comparison", "Design discussion #5 - K-Means vs GMM vs hierarchical; the continuum question; ARI/BIC"],
 ])
 para(d, "Documents 07+ are DESIGN DISCUSSIONS - decisions worked out topic-by-topic after planning, "
         "each recording the reasoning behind a methodological choice.")
@@ -668,6 +670,213 @@ numbered(d, "Run as tracked experiments: (i) business-weighted (R & M up), (ii) 
             "compare segments + validation metrics across all three. Equal weighting is EARNED by showing "
             "redundancy is handled and weighting choice does not secretly drive the result.")
 save(d, "09_Feature_Treatment.docx")
+
+
+# ---------------------------------------------------------------------------
+# 10 - CHOOSING & VALIDATING K  (Design discussion #4, 18 June 2026)
+# ---------------------------------------------------------------------------
+d = new_doc("Choosing & Validating K", "Design discussion #4 - how many segments, and proving they are real")
+para(d, "Added 18 June 2026. The heart of the project's rigor. Deciding the number of segments K is a "
+        "JUDGEMENT triangulated from evidence across three legs - not a number read off one chart. Standing "
+        "rule: every metric below is produced as a comparison artifact (observability).")
+
+h1(d, "The three-leg framework (decide K at the intersection, not on one leg)")
+table(d, ["Leg", "Question it answers", "Tools"], [
+    ["Statistical", "How many blobs, geometrically?", "silhouette + gap (primary); elbow + CH/DB (corroborate)"],
+    ["Stability", "Does that K reproduce, or is it one lucky run?", "bootstrap Jaccard, consensus matrix, seed ARI"],
+    ["Business", "Is that K actionable?", "one nameable marketing action per segment"],
+])
+para(d, "Internal indices alone are the weakest single basis - they only NARROW K. The decision is made by "
+        "weighing all three legs.")
+
+h1(d, "The honest truth about this data")
+para(d, "Customer behaviour is a CONTINUUM, not discrete islands - people spread smoothly from one-time "
+        "bargain buyer to loyal whale. There may be no single 'true' K, and the indices will often disagree "
+        "precisely because there is no clean answer. So the framing is not 'discover the correct number of "
+        "segments' but 'choose a USEFUL number that is statistically supported and stable.' Stating this out "
+        "loud is the mature position.")
+
+h1(d, "(A) Internal indices for choosing K")
+h2(d, "Elbow / inertia (intuition only - insufficient)")
+bullet(d, "Inertia = within-cluster sum of squares. It ALWAYS falls as K rises and hits 0 at K=n, so you "
+          "cannot minimise it - you look for the 'bend' where gains flatten. Subjective; two analysts read "
+          "different elbows.")
+bullet(d, "Make it objective with the Kneedle algorithm (point of maximum curvature). Use for intuition and "
+          "to narrow the range, never as sole justification. (It is the clustering analogue of a PCA scree plot.)")
+h2(d, "Silhouette (the workhorse)")
+bullet(d, "Per point: s = (b - a) / max(a, b), where a = mean distance to own-cluster points, b = mean "
+          "distance to the nearest OTHER cluster. s~+1 cozy inside; s~0 on a border; s<0 likely mis-assigned. "
+          "Average over points -> one score per K; pick the K that maximises it.")
+bullet(d, "The per-cluster silhouette PLOT shows WHICH clusters are tight vs mushy - a quality diagnostic, "
+          "not just a count.")
+bullet(d, "Rule of thumb (Kaufman & Rousseeuw): >0.7 strong, 0.5-0.7 reasonable, 0.25-0.5 weak, <0.25 no real "
+          "structure. For behavioural RFM, 0.3-0.5 is NORMAL and honest - do not chase 0.7 (forcing it = "
+          "over-splitting).")
+bullet(d, "Costs O(n^2) (sample if it bites); implicitly favours convex, equal-size clusters.")
+h2(d, "Gap statistic (the principled one)")
+bullet(d, "Compares your clustering's tightness to clustering pure RANDOM data with the same bounding box: "
+          "Gap(K) = E_null[log W_K] - log W_K. It corrects for the fact that inertia always drops.")
+bullet(d, "Selection rule: smallest K with Gap(K) >= Gap(K+1) - s_(K+1) (a built-in Occam's razor; s is the "
+          "reference standard error).")
+bullet(d, "Two nulls: a plain uniform box, or a PCA-aligned box (preferred, more conservative). Uniquely, the "
+          "gap statistic CAN return K=1 (no real clusters) - essential for an honesty-first project.")
+h2(d, "Calinski-Harabasz & Davies-Bouldin (fast corroboration)")
+bullet(d, "CH = variance ratio (between / within), F-statistic-like; HIGHER better. DB = average worst-case "
+          "cluster-pair similarity; LOWER better. Both favour spherical clusters (CH shares K-Means' "
+          "assumptions) -> use as corroboration, not the verdict.")
+h2(d, "Why triangulate")
+para(d, "Each method is biased differently (elbow subjective; silhouette/CH/DB favour spheres; gap depends on "
+        "the null). They fail in DIFFERENT directions, so agreement among them is robust precisely because "
+        "their biases do not coincide. Disagreement is itself a finding (usually gradient structure).")
+
+h1(d, "(B) Stability - proving the segments are REAL")
+para(d, "Internal indices say 'how many blobs' but not whether the solution reproduces. A clustering can "
+        "score well yet be fragile. Principle: real structure reproduces under perturbation; artifacts do not.")
+h2(d, "Bootstrap cluster stability (Hennig clusterboot / Jaccard)")
+bullet(d, "Subsample customers (prefer 80% WITHOUT replacement), re-cluster, and for each ORIGINAL cluster "
+          "find its best-matching bootstrap cluster via Jaccard overlap = |A and B| / |A or B|. Average over "
+          "~100 runs.")
+bullet(d, "Rule of thumb: mean Jaccard >0.85 highly stable; 0.75-0.85 stable; 0.60-0.75 suggestive; <0.60 "
+          "DISSOLVES (not a real segment). Scores EACH cluster - so you can find '3 solid + 1 dissolving', "
+          "which usually means K is one too high.")
+h2(d, "Consensus clustering (Monti et al.)")
+bullet(d, "Build an n x n matrix = fraction of runs in which each customer PAIR co-clusters. For the right K "
+          "it is near block-diagonal (entries near 0 or 1). Visualise as a heatmap (crisp blocks = stable) "
+          "and quantify crispness - an independent SECOND way to pick K.")
+h2(d, "Seed / initialisation stability (cheap smell test)")
+bullet(d, "Run many random inits; check they converge (high pairwise ARI, low inertia variance). If different "
+          "seeds give wildly different clusters, structure is weak regardless of silhouette. (This is what "
+          "n_init does internally.)")
+h2(d, "Comparing partitions - the label-switching problem")
+bullet(d, "You cannot match label NUMBERS ('cluster 2' is arbitrary). Use label-invariant measures: ARI "
+          "(whole partition, chance-corrected, 0=random 1=identical) for run-to-run agreement; Jaccard for a "
+          "single cluster's survival. For different sampled points, compare on common points or assign by "
+          "nearest centroid.")
+h2(d, "Pitfalls")
+bullet(d, "Bootstrap WITH replacement creates duplicate points (distance 0) -> degenerate micro-clusters; "
+          "prefer subsampling.")
+bullet(d, "Stability is NECESSARY not SUFFICIENT: a trivially separated wrong solution can be very stable, and "
+          "stability tends to favour smaller K. Read it WITH internal validity + business sense, never alone.")
+
+h1(d, "Decision procedure")
+numbered(d, "Search K = 2-8 (a sane business range - nobody runs 12 playbooks).")
+numbered(d, "Lead with silhouette + gap statistic; corroborate with elbow + CH/DB.")
+numbered(d, "Keep the small set of CANDIDATE K's the statistics support (likely 3-5); do not pick on a third "
+            "decimal of one index.")
+numbered(d, "Break the tie with stability (every segment must survive resampling) + interpretability.")
+numbered(d, "Document the call; disagreement among indices is a FINDING, not an embarrassment.")
+para(d, "Prediction: this lands at 3-5 segments - where RFM behavioural segmentation usually settles, both "
+        "statistically and because that is how many distinct playbooks a marketing team can run. Avoid: "
+        "cherry-picking the prettiest-K index; over-trusting one number; chasing silhouette 0.7 on "
+        "behavioural data.")
+save(d, "10_Choosing_and_Validating_K.docx")
+
+
+# ---------------------------------------------------------------------------
+# 11 - CLUSTERING METHOD COMPARISON  (Design discussion #5, 18 June 2026)
+# ---------------------------------------------------------------------------
+d = new_doc("Clustering Method Comparison", "Design discussion #5 - K-Means vs GMM vs hierarchical")
+para(d, "Added 18 June 2026. We do NOT just run K-Means. Every algorithm imposes a shape assumption and will "
+        "return clusters even if that assumption is wrong, so a single method's output is confounded (real "
+        "structure vs method artifact). Running methods with DIFFERENT assumptions and checking whether they "
+        "AGREE is how we separate real from artifact.")
+
+h1(d, "The interview trap: 'your data is a continuum - why K-Means?'")
+para(d, "Strongest answer: we are NOT claiming hidden discrete groups (it is a gradient). We use clustering "
+        "to impose a useful, low-distortion PARTITION on that continuum for a business that can run only a "
+        "handful of playbooks. K-Means is vector quantization - it finds the K prototype customers that "
+        "summarise the distribution with minimum information loss - which is exactly 'pick a few "
+        "representative segments.' And we did not assume it: we benchmarked against GMM and hierarchical.")
+h2(d, "Separate two questions (the interviewer conflates them)")
+bullet(d, "'Does the data have natural discrete clusters?' - often NO (continuum).")
+bullet(d, "'Is a K-way partition a useful, low-distortion summary?' - often YES. Segmentation is the second "
+          "question. Age brackets, tax bands, and credit-score bands all partition continua usefully despite "
+          "no natural gaps.")
+h2(d, "The caveat to VOLUNTEER (volunteering it scores the points)")
+para(d, "Boundary customers are genuinely ambiguous on a continuum, so we do not over-claim crisp groups. "
+        "That is exactly why we report the silhouette (flags boundary/negative points), cross-check the GMM's "
+        "soft probabilities, and treat segments as a deliberate discretisation rather than a discovery of "
+        "natural kinds. Naming the limitation before being asked signals maturity.")
+
+h1(d, "K-Means - the interpretable quantizer")
+bullet(d, "Minimises within-cluster squared Euclidean distance; carves space into Voronoi cells with hard "
+          "straight boundaries. Assumes spherical, similar-size, similar-variance clusters; hard assignment.")
+bullet(d, "Strengths: fast, scalable, INTERPRETABLE centroids (each = a describable average customer). The "
+          "optimal quantizer = our continuum justification. Weaknesses: spherical assumption often wrong; "
+          "hard boundaries poor for a continuum; must pre-specify K. Role: deployed baseline.")
+
+h1(d, "GMM - honest about overlap (plain + rigorous)")
+para(d, "Plain: instead of hard bubbles, GMM says the customer base is a BLEND of a few 'types' and each "
+        "person is a mix (e.g. Erin = 60% loyal-regular, 40% lapsed-spender). Soft percentages, not a forced box.")
+bullet(d, "Generative model: a mixture of K Gaussians, each with its own MEAN (archetype) and COVARIANCE "
+          "(shape/size/tilt of the oval) plus a mixing weight (segment size). K-Means bubbles must be round "
+          "and equal; GMM ovals can stretch, tilt, and differ in size.")
+bullet(d, "Fit by EM: responsibility = posterior probability a component generated a customer (the soft "
+          "membership). E-step computes responsibilities; M-step re-estimates each Gaussian by "
+          "responsibility-weighted averages; iterate. Likelihood increases each round but only to a LOCAL "
+          "optimum -> several inits, usually k-means-initialised (so K-Means is a precursor, not a rival).")
+bullet(d, "covariance_type (spherical / diag / tied / full) = how fancy each oval may be; a bias-variance "
+          "dial. spherical ~ soft K-Means; full = flexible but overfits. Chosen by BIC, not by eye.")
+bullet(d, "Payoff: soft memberships DETECT fence-sitters (entropy of the membership vector, or 1 - max prob). "
+          "You can report 'X% of customers confidently assigned vs on a boundary' - a direct, honest "
+          "statement about the continuum.")
+bullet(d, "Theory link: K-Means is GMM in a limit (spherical covariance, variance -> 0, hard assignment) -> "
+          "GMM strictly GENERALISES K-Means.")
+bullet(d, "Failure modes: singularities (a component collapses onto a point, variance -> 0, likelihood -> "
+          "infinity) -> regularise (reg_covar); non-Gaussianity (RFM not perfectly Gaussian even after log) -> "
+          "GMM may add SPURIOUS components just to patch shape, so do not over-read 'BIC wants 6'; local "
+          "optima -> multiple inits.")
+
+h1(d, "Hierarchical / agglomerative - the structure visualiser (plain + rigorous)")
+para(d, "Plain: build a family tree by repeatedly merging the two most-similar groups until one remains, then "
+        "SLICE the tree wherever you like to get segments. Anna+Beth (near-identical) merge first/low; Carl "
+        "(giant rare order) is absorbed last/high.")
+bullet(d, "Mechanics: start with n singletons -> merge the closest pair (by linkage) -> update distances "
+          "(Lance-Williams recurrence) -> record the dendrogram. Cut at a height / at K leaves to get the "
+          "partition.")
+bullet(d, "Linkage = how 'distance between groups' is defined: single (closest members; chains), complete "
+          "(farthest; compact), average (mean; balanced), Ward (merge that adds least within-cluster "
+          "variance; K-Means-like). Default: Ward + Euclidean for comparability.")
+bullet(d, "Reading the dendrogram = the continuum answer made visual: a long tall gap before a merge = a "
+          "natural split (cut it); steady merges with no gaps = a GRADIENT (the cut is your choice, not a "
+          "discovery). You can show the tree, mark the cut, and justify K visually.")
+bullet(d, "Cophenetic correlation = corr(original pairwise distances, tree-implied distances); >0.7 means the "
+          "tree faithfully represents the data - a one-number 'is this dendrogram honest?' check.")
+bullet(d, "Costs: O(n^2) memory for the distance matrix (~5,900 customers -> a few hundred MB; fine on a "
+          "laptop, breaks first at scale); greedy and irreversible; centroid/median linkage can 'invert' -> "
+          "prefer Ward.")
+
+h1(d, "What we are NOT using - DBSCAN")
+para(d, "Density-based clustering needs dense regions separated by SPARSE GAPS. A continuum has no gaps, so "
+        "DBSCAN collapses to one blob (as the original notebook found). Knowing WHY it fails is understanding, "
+        "not a gap.")
+
+h1(d, "The comparison machinery")
+h2(d, "ARI - do two groupings agree?")
+para(d, "Over all PAIRS of customers, count those the two methods agree on (both-together or both-apart), "
+        "then adjust so random scores 0. ARI = 1 identical, 0 chance-level, <0 worse than random. "
+        "Label-invariant. Headline use: a 3x3 ARI matrix among K-Means / GMM / Ward at the chosen K - high "
+        "off-diagonal (>=0.7) means three differently-biased methods agree on who-belongs-with-whom -> the "
+        "segmentation is REAL, not an artifact of one method.")
+h2(d, "BIC - the fair count of segments (GMM only)")
+para(d, "GMM is a likelihood model, so BIC = -2 ln L + p ln n (p = free params, grows with K and covariance "
+        "type). Lower is better; its ln n penalty is harsher than AIC's, so BIC prefers simpler models and "
+        "guards against spurious components. Plot BIC vs K per covariance type -> a K vote from a DIFFERENT "
+        "family of evidence than silhouette/gap.")
+h2(d, "Crowning a method fairly (avoid circularity)")
+para(d, "Do not judge with a referee that shares a method's assumptions: silhouette/CH/Ward all favour "
+        "spheres and so tilt toward K-Means/Ward. Weigh a BASKET: internal indices + stability + GMM BIC + "
+        "cross-method ARI + interpretability.")
+
+h1(d, "Likely decision (let the evidence confirm)")
+bullet(d, "K-Means = deployed primary (interpretable centroids, scalable).")
+bullet(d, "GMM = continuum-aware cross-check (soft boundary memberships + BIC corroboration of K).")
+bullet(d, "Hierarchical (Ward) = visual/structural corroboration (dendrogram narrative + cophenetic check).")
+bullet(d, "Headline credibility result = the cross-method ARI agreement. Follow the evidence if GMM materially "
+          "wins on BIC/validation.")
+para(d, "Observability deliverables: method x metric table, 3x3 ARI matrix, BIC-vs-K curves, the dendrogram "
+        "with its cut, and PCA scatter of each method's labels overlaid.")
+save(d, "11_Clustering_Method_Comparison.docx")
 
 
 print("\nAll documents generated in:", OUT_DIR)
