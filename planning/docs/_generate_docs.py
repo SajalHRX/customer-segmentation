@@ -135,6 +135,7 @@ table(d, ["Document", "Contents"], [
     ["12_CLV_and_Segments_Integration", "Design discussion #6 - CLV as a separate post-hoc layer joined on Customer ID; the segment x CLV grid"],
     ["13_Segment_Profiling_and_Validation", "Design discussion #7a - profiling clusters into named personas; validating they are real (3 tiers)"],
     ["14_Recommendations_and_Success_Criteria", "Design discussion #7b - the action/value-at-stake grid; what 'good' means for the project"],
+    ["15_BGNBD_GammaGamma_CLV_Engine", "Design discussion #8 - the probabilistic CLV model (BG/NBD + Gamma-Gamma) in depth"],
 ])
 para(d, "Documents 07+ are DESIGN DISCUSSIONS - decisions worked out topic-by-topic after planning, "
         "each recording the reasoning behind a methodological choice.")
@@ -1116,6 +1117,105 @@ bullet(d, "The action / value-at-stake grid (Section 3).")
 bullet(d, "The validation evidence (stability + separation + cross-method agreement).")
 bullet(d, "A written narrative tying it all back to the problem statement.")
 save(d, "14_Recommendations_and_Success_Criteria.docx")
+
+
+# ---------------------------------------------------------------------------
+# 15 - BG/NBD + GAMMA-GAMMA CLV ENGINE  (Design discussion #8, 18 June 2026)
+# ---------------------------------------------------------------------------
+d = new_doc("BG/NBD + Gamma-Gamma (CLV Engine)", "Design discussion #8 - the probabilistic model behind predicted CLV")
+para(d, "Added 18 June 2026. The probabilistic engine that produces each customer's predicted CLV, used as a "
+        "separate post-hoc layer (doc 12) and validated by temporal holdout (doc 08).")
+
+h1(d, "1. The problem these models solve")
+para(d, "Retail is NON-CONTRACTUAL: customers never announce they have left - they just stop buying. So when a "
+        "customer has not ordered in months, we cannot know if they are churned (dead) or alive-but-dormant - "
+        "but we can INFER a probability. Naive CLV ('sum past spend') fails: it is backward-looking and treats "
+        "a dormant-loyal customer the same as a dead one. We need a forward-looking probabilistic forecast, "
+        "which splits into two questions, each with its own model.")
+table(d, ["Question", "Model", "Inputs"], [
+    ["HOW MANY times will they buy in future?", "BG/NBD", "frequency, recency, tenure"],
+    ["HOW MUCH is each purchase worth?", "Gamma-Gamma", "frequency, avg monetary value"],
+])
+para(d, "CLV ~ E[future transactions] (BG/NBD) x E[value per transaction] (Gamma-Gamma), optionally discounted.")
+
+h1(d, "2. THE NAMING TRAP (pin this down or it causes bugs)")
+para(d, "BG/NBD inputs share names with our clustering features but mean DIFFERENT things:")
+table(d, ["Term", "In our CLUSTERING (docs 09-13)", "In BG/NBD"], [
+    ["Frequency", "total # of invoices", "# of REPEAT transactions = invoices - 1 (first purchase = 'birth', not counted)"],
+    ["Recency", "DAYS SINCE last purchase", "AGE AT last purchase = first->last span (t_x)"],
+    ["T (tenure)", "first->last span", "first purchase -> END of observation window (anchor 2012-01-01)"],
+])
+para(d, "Consequences: a one-purchase-only customer has BG/NBD frequency = 0; BG/NBD recency is NOT "
+        "'days since', it is 'age at last purchase'. Build a SEPARATE (frequency, recency, T, monetary) table "
+        "for CLV - do not reuse the clustering RFM columns. lifetimes.summary_data_from_transaction_data() "
+        "builds these correctly.")
+
+h1(d, "3. BG/NBD - the behavioural story")
+para(d, "Each customer is governed by two hidden processes.")
+h2(d, "Process 1 - buying while alive (the 'NBD' part)")
+bullet(d, "While alive, a customer buys at random as a Poisson process with their own rate lambda "
+          "(purchases per unit time) - memoryless, no schedule.")
+bullet(d, "lambda differs across customers -> drawn from a Gamma distribution (params r, alpha). Poisson "
+          "counts + Gamma heterogeneity = Negative Binomial across the population (the NBD).")
+h2(d, "Process 2 - dropping out (the 'BG' part)")
+bullet(d, "After EACH purchase the customer 'flips a coin': with probability p they go inactive forever (die); "
+          "with prob (1-p) they live to buy again. Number of purchases until death = Geometric.")
+bullet(d, "p differs across customers -> drawn from a Beta distribution (params a, b) (the BG).")
+para(d, "Four population parameters - r, alpha, a, b - estimated by maximum likelihood from everyone's "
+        "(x, t_x, T). No per-customer tuning; individual behaviour falls out via Bayes.")
+h2(d, "The magic output: P(alive)")
+para(d, "Given (x, t_x, T), the model returns the posterior probability the customer is still active. "
+        "Intuition: a regular whose last purchase was RECENT (t_x close to T) -> P(alive) high; a once-frequent "
+        "customer whose last purchase was long ago (t_x << T) -> P(alive) low, because a long silence is "
+        "'surprising' relative to their own established rate. A high-frequency customer who suddenly goes quiet "
+        "is more alarming than a naturally rare buyer who is quiet - the model captures exactly that, which is "
+        "why recency drives churn inference, not raw frequency.")
+para(d, "Forecast: E[Y(t) | x, t_x, T] = expected purchases in the next t periods (closed form uses the "
+        "Gaussian hypergeometric function; lifetimes evaluates it).")
+
+h1(d, "4. Gamma-Gamma - the monetary story")
+bullet(d, "Each customer has a true average spend per transaction; observed values scatter around it "
+          "(Gamma-distributed). That per-customer average itself varies across the population (also Gamma) -> "
+          "Gamma-Gamma. Three parameters, MLE-fit.")
+bullet(d, "Bayesian shrinkage: the estimate of a customer's average spend is a weighted blend of THEIR OWN "
+          "observed average and the POPULATION average. Many transactions -> trust their own; few "
+          "transactions -> pull toward population (one GBP 900 order is not proof they are a GBP 900 "
+          "customer). Protects against over-trusting thin evidence.")
+bullet(d, "ASSUMPTION TO VERIFY: Gamma-Gamma requires monetary value to be ~independent of frequency. Before "
+          "fitting, compute the correlation between frequency and avg monetary value - it should be near zero. "
+          "If frequent buyers systematically spend more/less per order, the model is misapplied - say so. A "
+          "real validity gate, not a formality.")
+
+h1(d, "5. Combining into CLV")
+para(d, "CLV = sum over future periods of (expected transactions in period) x (expected value per "
+        "transaction), divided by (1+d)^period. Horizon = 12 months (doc 12). Discount rate d = optional DCF "
+        "(a v2 rigor touch). lifetimes.customer_lifetime_value() stitches BG/NBD (count) and Gamma-Gamma "
+        "(value) together.")
+
+h1(d, "6. Why this beats naive CLV")
+bullet(d, "Probabilistic - carries P(alive) and population heterogeneity, not a point guess.")
+bullet(d, "Forward-looking - predicts future behaviour rather than summing history.")
+bullet(d, "Uses recency correctly - distinguishes dormant-but-alive from churned, which a historical sum cannot.")
+bullet(d, "Testable out-of-sample - the temporal-holdout validation of doc 08 (calibration plot, predicted vs actual).")
+
+h1(d, "7. Assumptions to report honestly")
+bullet(d, "BG/NBD: Poisson buying while alive (no per-customer seasonality/trend); dropout only AFTER a "
+          "purchase; parameters static over time.")
+bullet(d, "Gamma-Gamma: spend independent of frequency (VERIFY); spend Gamma-shaped; mean spend stationary.")
+bullet(d, "Both assume non-contractual behaviour (fits retail) and need enough REPEAT buyers - single-purchase "
+          "customers (frequency = 0, a large slice of this dataset) are handled but carry high uncertainty; "
+          "state their share.")
+
+h1(d, "8. Practical pipeline (lifetimes)")
+numbered(d, "summary_data_from_transaction_data() -> per-customer frequency, recency, T, monetary_value.")
+numbered(d, "BetaGeoFitter().fit(frequency, recency, T) -> r, alpha, a, b.")
+numbered(d, "Check freq <-> monetary correlation ~0; filter to repeat buyers (frequency > 0); "
+            "GammaGammaFitter().fit(...).")
+numbered(d, "conditional_probability_alive(); conditional_expected_number_of_purchases_up_to_time(t); "
+            "customer_lifetime_value(...).")
+numbered(d, "Validate via calibration_and_holdout_data() + calibration plots (doc 08), across the 3/6/9-month "
+            "cutoffs.")
+save(d, "15_BGNBD_GammaGamma_CLV_Engine.docx")
 
 
 print("\nAll documents generated in:", OUT_DIR)
