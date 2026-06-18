@@ -132,6 +132,7 @@ table(d, ["Document", "Contents"], [
     ["09_Feature_Treatment", "Design discussion #3 - skew/log, scaling (Robust vs Standard), weighting & redundancy"],
     ["10_Choosing_and_Validating_K", "Design discussion #4 - choosing K (elbow/silhouette/gap/CH/DB) + stability (bootstrap/consensus)"],
     ["11_Clustering_Method_Comparison", "Design discussion #5 - K-Means vs GMM vs hierarchical; the continuum question; ARI/BIC"],
+    ["12_CLV_and_Segments_Integration", "Design discussion #6 - CLV as a separate post-hoc layer joined on Customer ID; the segment x CLV grid"],
 ])
 para(d, "Documents 07+ are DESIGN DISCUSSIONS - decisions worked out topic-by-topic after planning, "
         "each recording the reasoning behind a methodological choice.")
@@ -877,6 +878,63 @@ bullet(d, "Headline credibility result = the cross-method ARI agreement. Follow 
 para(d, "Observability deliverables: method x metric table, 3x3 ARI matrix, BIC-vs-K curves, the dendrogram "
         "with its cut, and PCA scatter of each method's labels overlaid.")
 save(d, "11_Clustering_Method_Comparison.docx")
+
+
+# ---------------------------------------------------------------------------
+# 12 - CLV AND SEGMENTS INTEGRATION  (Design discussion #6, 18 June 2026)
+# ---------------------------------------------------------------------------
+d = new_doc("CLV and Segments Integration", "Design discussion #6 - how the value model and the clusters fit together")
+para(d, "Added 18 June 2026. We build TWO models - a clustering (groups customers by behaviour) and a CLV "
+        "model (BG/NBD + Gamma-Gamma, predicts future value). This records how they relate.")
+
+h1(d, "The options")
+table(d, ["Option", "Idea", "Verdict"], [
+    ["CLV as a clustering input", "Feed predicted CLV in as another feature", "Rejected - circular (see below)"],
+    ["CLV as a post-hoc layer", "Cluster on behaviour, attach CLV per customer afterward", "CHOSEN"],
+    ["One combined model", "A single joint model of behaviour + value", "Rejected - overcomplicated, loses interpretability"],
+])
+
+h1(d, "Why CLV must NOT be a clustering input")
+bullet(d, "Circularity: CLV is built FROM Recency/Frequency/Monetary - the same inputs the clustering already "
+          "uses - so feeding it back double-counts the spend signal (the redundancy trap from discussion #3 "
+          "in a new costume).")
+bullet(d, "Interpretability: we want segments defined by BEHAVIOUR, then to state what each behavioural segment "
+          "is worth. If CLV helps define the groups, we can no longer say 'this behaviour group turns out to "
+          "be worth the most' - value already shaped the group.")
+bullet(d, "Keeping them separate preserves a free validation (next section) that merging would destroy.")
+
+h1(d, "How they meet: a join on Customer ID")
+para(d, "Two separate pipelines that meet at the customer level:")
+bullet(d, "Clustering pipeline: scaled log-RFM + tenure -> segment label.")
+bullet(d, "CLV pipeline: RAW frequency / recency / tenure / monetary -> lifetimes model -> predicted future "
+          "value. Note: CLV uses raw counts/dates - NOT scaled or logged; a different pipeline entirely.")
+para(d, "Each customer ends with two attributes - a segment and a predicted CLV - joined into one final table.")
+
+h1(d, "The free validation (internal consistency check)")
+para(d, "Two INDEPENDENT methods both point at 'who is valuable': clustering ('these form the Champion "
+        "behaviour group') and CLV ('these have the highest predicted future value'). If high-CLV customers "
+        "concentrate in the Champion segment, the two independent methods AGREE -> strong evidence both "
+        "capture something real. If they disagree (e.g. an active-looking segment with low CLV -> possibly "
+        "about to churn), that is itself a finding. Deliverable: a segment x CLV summary table (observability).")
+
+h1(d, "The business deliverable: the segment x CLV action grid")
+para(d, "Combine segment (behaviour / lifecycle) with CLV (value) into a prioritised action - this is where "
+        "framing A pays off: spend follows expected RETURN (CLV) WITHIN behavioural context (segment).")
+table(d, ["Segment \\ Value", "High CLV", "Low CLV"], [
+    ["At-risk", "TOP priority win-back (valuable AND leaving)", "Let them lapse"],
+    ["Champion", "Protect / VIP perks", "Steady nurture"],
+    ["New", "Invest to grow", "Light-touch onboarding"],
+])
+para(d, "A high-value customer who is slipping is the single best place to spend a retention pound - and only "
+        "the segment x value combination surfaces them.")
+
+h1(d, "Sub-decisions inside CLV")
+bullet(d, "Horizon: predict CLV over a fixed future window - default 12 months (clean business-planning unit).")
+bullet(d, "Discounting: optionally apply DCF (a pound next year is worth less than today) - a rigor touch; "
+          "can be a v2.")
+bullet(d, "Bonus signal: BG/NBD also outputs P(alive), a per-customer churn-risk probability that complements "
+          "the segment's lifecycle read.")
+save(d, "12_CLV_and_Segments_Integration.docx")
 
 
 print("\nAll documents generated in:", OUT_DIR)
