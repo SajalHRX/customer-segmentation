@@ -8,19 +8,23 @@
 
 ## 🔖 STATUS (update this every session)
 
-- **Current phase:** Repo restructured to a clean slate. File structure for the actual
-  analysis is intentionally NOT decided yet (the old notebooks/src/reports/tests scaffolding
-  was rejected and deleted).
-- **Last done (2026-06-18):** Cleaned the repo down to bare essentials. Root now holds only
-  `.gitignore`, `CLAUDE.md`, `requirements.txt`, and `data/` (with the 45MB dataset).
-  All planning material consolidated under `planning/docs/`. Deleted empty scaffolding
-  dirs (notebooks/, src/, reports/, tests/). Pushed to private repo
-  `SajalHRX/customer-segmentation` (branch `main`).
+- **Current phase:** Deep DESIGN DISCUSSIONS, topic by topic (recorded as docs 07-11). Still
+  no analysis code; the analysis file structure is intentionally NOT decided yet.
+- **Last done (2026-06-18):** Worked through 5 design discussions and recorded each as a
+  planning doc — #1 problem framing (07), #2 time window + CLV validation (08), #3 feature
+  treatment (09), #4 choosing & validating K (10), #5 clustering method comparison (11).
+  Repo cleaned to bare essentials earlier; pushed to private repo `SajalHRX/customer-segmentation`.
+- **Working pattern:** go topic by topic, in depth, plain-language + examples; after each topic
+  is decided, append a doc to `planning/docs/_generate_docs.py`, regenerate, commit & push.
+  Standing rule: every experiment must be observable (see [[feedback-experiment-observability]]).
 - **Current tree:** `.gitignore`, `CLAUDE.md`, `requirements.txt`, `data/raw/` (dataset),
-  `planning/docs/` (7 .docx + _generate_docs.py).
-- **➡️ NEXT STEP:** Decide the new analysis file structure with Sajal, then begin
-  **data cleaning**: load both xlsx sheets, handle 22.8% missing Customer ID,
-  `C`-cancellations, negative-qty returns → clean transaction table.
+  `planning/docs/` (12 .docx: 00-11 + _generate_docs.py).
+- **Decisions locked so far:** anchor date = 2012-01-01; CLV validated via temporal holdout at
+  3/6/9-month cutoffs; log1p on F/M/AvgBasket; RobustScaler primary (+StandardScaler experiment);
+  cluster on R/F/M/Tenure (AvgBasket profiling-only, = M/F redundancy); K by triangulation
+  (silhouette+gap primary) × stability × business; compare K-Means/GMM/Ward via cross-method ARI.
+- **➡️ NEXT TOPICS (not yet discussed):** CLV <-> segments integration; segment naming &
+  recommendations; THEN decide analysis file structure and begin data cleaning.
 - **Not yet started:** new structure, any analysis code/notebooks.
 - **GitHub auth note:** `gh` active account = SajalHRX (personal). Switch back for LinkedIn
   work with `gh auth switch -u sajsingh_LinkedIn`.
