@@ -18,8 +18,13 @@
 - **Working pattern:** go topic by topic, in depth, plain-language + examples; after each topic
   is decided, append a doc to `planning/docs/_generate_docs.py`, regenerate, commit & push.
   Standing rule: every experiment must be observable (see [[feedback-experiment-observability]]).
-- **Current tree:** `.gitignore`, `CLAUDE.md`, `requirements.txt`, `data/raw/` (dataset),
-  `planning/docs/` (15 .docx: 00-14 + _generate_docs.py).
+- **Current tree:** root `README.md` + `.gitignore` + `CLAUDE.md` + `requirements.txt`;
+  `data/{raw,processed}/`; `planning/docs/` (16 .docx: 00-15 + _generate_docs.py);
+  `design/` (Mermaid diagrams — README only so far); `notebooks/`, `src/`, `tests/`,
+  `reports/figures/` (each a purpose-README, no code yet).
+- **File structure (LOCKED):** hybrid = numbered notebooks (narrate + call src) + `src/`
+  reusable tested modules, built LAZILY (no empty stubs). `planning/` = the "why" (decisions),
+  `design/` = the "how it's wired" (architecture/pipeline diagrams as Mermaid markdown).
 - **Decisions locked so far:** anchor date = 2012-01-01; CLV validated via temporal holdout at
   3/6/9-month cutoffs; log1p on F/M/AvgBasket; RobustScaler primary (+StandardScaler experiment);
   cluster on R/F/M/Tenure (AvgBasket profiling-only, = M/F redundancy); K by triangulation
@@ -27,10 +32,11 @@
   CLV = separate post-hoc layer joined on Customer ID (segment × CLV action grid); validate
   personas in 3 tiers (effect-size, classifier, external-variable gold standard); success =
   validated + interpretable + consistent + actionable + honest.
-- **➡️ NEXT:** The full methodology is now designed end-to-end (docs 07-14). Remaining before
-  coding: decide the analysis file structure (notebooks vs src layout), THEN begin data cleaning
-  (load both xlsx sheets, drop 22.8% missing Customer ID, handle C-cancellations & negative-qty
-  returns → clean transaction table). Possible deferred topic: BG/NBD + Gamma-Gamma mechanics deep-dive.
+- **➡️ NEXT:** Methodology designed end-to-end (docs 07-15) and file structure locked & created.
+  Immediate next = build `design/` diagrams (Mermaid pipeline/architecture — the implementation
+  blueprint). THEN design discussion #9 = data cleaning decisions (returns netting vs drop,
+  zero/neg prices, dupes, wholesaler flagging) → doc 16, THEN code `notebooks/01_cleaning` +
+  `src/data_prep.py` + `tests/test_data_prep.py`. EDA plan (#10) follows.
 - **Not yet started:** new structure, any analysis code/notebooks.
 - **GitHub auth note:** `gh` active account = SajalHRX (personal). Switch back for LinkedIn
   work with `gh auth switch -u sajsingh_LinkedIn`.
