@@ -1,0 +1,27 @@
+# --- Data: never commit the raw 45MB Excel or large processed tables ---
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# --- Jupyter ---
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/*
+
+# --- Reports: keep figures tracked, ignore scratch exports ---
+reports/*.pdf
+reports/*.html
+
+# --- OS / editor ---
+.DS_Store
+.idea/
+.vscode/
+*.swp
