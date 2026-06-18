@@ -129,6 +129,7 @@ table(d, ["Document", "Contents"], [
     ["06_Repo_Structure_and_Roadmap", "Planned repo layout, notebooks, methods map, data flow"],
     ["07_Problem_Framing_and_Scope", "Design discussion #1 - chosen framing (retention/budget), honest scope boundaries"],
     ["08_Time_Window_and_CLV_Validation", "Design discussion #2 - anchor date, temporal holdout, multi-cutoff experiment"],
+    ["09_Feature_Treatment", "Design discussion #3 - skew/log, scaling (Robust vs Standard), weighting & redundancy"],
 ])
 para(d, "Documents 07+ are DESIGN DISCUSSIONS - decisions worked out topic-by-topic after planning, "
         "each recording the reasoning behind a methodological choice.")
@@ -587,6 +588,86 @@ para(d, "So the holdout is a credibility experiment; the production CLV uses all
         "calibrated from 3 to 9 months and its parameters are stable' is a much stronger claim than a single "
         "holdout.")
 save(d, "08_Time_Window_and_CLV_Validation.docx")
+
+
+# ---------------------------------------------------------------------------
+# 09 - FEATURE TREATMENT  (Design discussion #3, 18 June 2026)
+# ---------------------------------------------------------------------------
+d = new_doc("Feature Treatment", "Design discussion #3 - skew, scaling, and feature weighting")
+para(d, "Added 18 June 2026. How the customer-level features are transformed before clustering. Three "
+        "linked issues: distributional skew, scaling, and weighting/redundancy. Standing rule: every "
+        "experiment below must be observable (compare variants, never run blind).")
+
+h1(d, "Issue 1 - Skew (the log transform)")
+para(d, "RFM features are strongly right-skewed (Pareto-like): most customers buy a little, a few "
+        "wholesalers buy enormously. Monetary can span ~5 orders of magnitude (~GBP 3 to ~GBP 280,000).")
+h2(d, "Why it breaks K-Means")
+bullet(d, "Euclidean distance sums squared differences; a feature with huge spread dominates the distance "
+          "(raw Monetary swamps Recency) - clustering silently collapses to 'sort by spend'.")
+bullet(d, "Even after scaling, a few whales sit so far out that K-Means wastes whole clusters isolating "
+          "them: {whale1},{whale2},{everyone else}. Scaling alone does NOT fix this - you must reshape the "
+          "distribution. That is the log's job.")
+h2(d, "What log does, and why log1p")
+bullet(d, "Log compresses the tail and turns multiplicative/ratio structure into additive: each 10x jump in "
+          "spend becomes the same fixed step. Distance then means 'how many times bigger', not 'how many "
+          "pounds bigger' - the right notion of customer similarity.")
+bullet(d, "Use log1p = log(1+x): defined at 0 (some netted Monetary or Recency=0 on the anchor day), stable "
+          "for small values, ~identical to log for large.")
+h2(d, "Decision & verification")
+bullet(d, "Apply log1p to Frequency, Monetary, AvgBasket. Leave Recency raw unless its skewness says otherwise "
+          "(it is usually mild / sometimes bimodal) - do not auto-log every feature.")
+bullet(d, "Verify, do not assert: histograms before/after, Fisher skewness pre/post (target near 0), Q-Q plot. "
+          "Optional rigor: run Box-Cox and report the optimal lambda lands near 0, empirically justifying log.")
+
+h1(d, "Issue 2 - Scaling")
+para(d, "Log fixes each feature's SHAPE; features still live on different ranges (Recency in hundreds of "
+        "days vs log features in single digits to ~12), so distance would now be dominated by Recency. "
+        "Scaling makes features contribute comparably. Order matters: LOG first (reshape), THEN scale "
+        "(re-range) - scaling is affine and cannot fix skew.")
+table(d, ["Scaler", "Center / Spread", "Outlier-sensitive?", "Verdict"], [
+    ["StandardScaler", "mean / std", "Yes (mean & std pulled by extremes)", "Run as experiment / robustness check"],
+    ["RobustScaler", "median / IQR", "No (middle 50% only)", "CHOSEN primary - data is part-wholesale"],
+    ["MinMaxScaler", "min / max-min", "Very", "Rejected - one whale squashes everyone"],
+    ["Normalizer (L2)", "per-row norm", "n/a", "Rejected - rescales customers, destroys magnitude"],
+])
+bullet(d, "Decision: log1p -> RobustScaler as primary; ALSO run StandardScaler and compare whether segments / "
+          "validation metrics are stable across the two (a reportable robustness result).")
+bullet(d, "Standardising to equal spread is an IMPLICIT decision that all features are equally important - "
+          "name it explicitly. (See Issue 3.)")
+bullet(d, "Hygiene: fit the scaler once on the full feature table and persist it (joblib); same scaled matrix "
+          "feeds K-Means and the PCA viz. This scaler is for clustering only - the CLV holdout uses raw "
+          "counts/dates via lifetimes, a separate pipeline.")
+
+h1(d, "Issue 3 - Weighting & redundancy (do NOT just default to equal)")
+para(d, "'Equal weight per column' only equals 'fair' if columns are independent constructs. Ours are not.")
+h2(d, "Two redundancy problems")
+bullet(d, "AvgBasket is a DETERMINISTIC function of the others: AvgBasket = Monetary / Frequency, so in log "
+          "space log AvgBasket = log Monetary - log Frequency (exact linear combination = perfect "
+          "multicollinearity). Feeding all three adds zero new information and lets the 'spend' direction "
+          "count extra.")
+bullet(d, "Even otherwise, F, M and Tenure are correlated - much of their variance is one underlying "
+          "'how much of a customer are you' axis. Equal-per-column then TRIPLE-COUNTS that axis and drowns "
+          "out Recency, which under framing A is the most decision-relevant feature (churn signal).")
+h2(d, "The three philosophies")
+table(d, ["Option", "Idea", "Trade-off"], [
+    ["A. Fix redundancy, then equal", "Drop deterministic/near-duplicate features, then weight equally",
+     "Interpretable baseline; CHOSEN starting point"],
+    ["B. Business weighting", "Up-weight Recency & Monetary (the decision drivers)",
+     "Defensible but subjective - 'how did you pick weights?'"],
+    ["C. De-correlate (PCA-whiten / Mahalanobis)", "Let covariance handle correlated features automatically",
+     "Principled, but components are harder to interpret in RFM terms"],
+])
+h2(d, "Decided path")
+numbered(d, "Diagnose first: compute and SHOW the correlation matrix of the (log) features - let data reveal "
+            "redundancy, do not just assert it. (Observability artifact.)")
+numbered(d, "Remove the deterministic redundancy (AvgBasket = M/F) - a correctness fix, not a preference. "
+            "Plan: make AvgBasket profiling-only; cluster on Recency / Frequency / Monetary / Tenure "
+            "(re-check whether Tenure is largely redundant with Frequency and drop if so).")
+numbered(d, "Default to equal weighting on the cleaned, non-redundant set as the interpretable baseline.")
+numbered(d, "Run as tracked experiments: (i) business-weighted (R & M up), (ii) PCA-whitened / Mahalanobis; "
+            "compare segments + validation metrics across all three. Equal weighting is EARNED by showing "
+            "redundancy is handled and weighting choice does not secretly drive the result.")
+save(d, "09_Feature_Treatment.docx")
 
 
 print("\nAll documents generated in:", OUT_DIR)
