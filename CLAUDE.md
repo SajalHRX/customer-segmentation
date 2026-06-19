@@ -8,20 +8,32 @@
 
 ## 🔖 STATUS (update this every session)
 
-- **Current phase:** Deep DESIGN DISCUSSIONS, topic by topic (recorded as docs 07-11). Still
-  no analysis code; the analysis file structure is intentionally NOT decided yet.
-- **Last done (2026-06-18):** Worked through 7 design discussions and recorded each as a
-  planning doc — #1 problem framing (07), #2 time window + CLV validation (08), #3 feature
-  treatment (09), #4 choosing & validating K (10), #5 clustering method comparison (11),
-  #6 CLV<->segments integration (12), #7 segment naming: profiling+validation (13) and
-  recommendations+success criteria (14). Pushed to private repo `SajalHRX/customer-segmentation`.
-- **Working pattern:** go topic by topic, in depth, plain-language + examples; after each topic
-  is decided, append a doc to `planning/docs/_generate_docs.py`, regenerate, commit & push.
-  Standing rule: every experiment must be observable (see [[feedback-experiment-observability]]).
+- **Current phase:** Building `design/` Mermaid diagrams + locking remaining pre-code decisions.
+  No analysis code yet. ⚠️ **DO NOT commit — user paused commits 2026-06-19 ("I'll say when")**;
+  working tree has uncommitted design diagrams + docs 16-17 + doc-04 patch + status updates.
+- **Last done (2026-06-19→20):** (1) Cleaning decisions → doc 16 (DROP returns + track return-rate;
+  invalid-records a-e, postage excluded; wholesaler → feature-eng as supporting). (2) Feature-engineering
+  decisions (discussion #10 → doc 17): Tenure = first→anchor (customer age; PATCHED doc 04 which said
+  first→last); Tenure transform decided by Feature EDA (prior=no log); single-purchase customers KEPT
+  as distinct group (degeneracy Recency=Tenure, AvgBasket=Monetary for one-timers; cluster-structure
+  decided in EDA — lean split-off; CLV: BG/NBD incl, Gamma-Gamma excl → pop-mean fallback; report share).
+  (3) Built ALL 6 core design diagrams: `project-architecture`, `data-cleaning`, `feature-engineering`
+  (3-lane fork), `two-track-modeling` (clustering ‖ CLV, no-circularity note), `validation-flow` (2 lanes),
+  `segments-to-actions` (profile→name→segment×CLV grid→recommendations). PNGs in reports/figures via mmdc
+  (bold title + grey italic descriptor; `&middot;`/`&times;`/`&amp;` entities render, `&rarr;` does NOT).
+- **Key principle (new):** CORE vs SUPPORTING variables — core lane (R/F/M/Tenure) drives clustering;
+  supporting lane (wholesaler flag, Country, product mix, return-rate, CLV) NEVER enters clustering,
+  only feeds EDA/validation/profiling/recommendations. A supporting var explains & validates segments,
+  never defines them.
+- **Working pattern:** topic by topic, in depth; after each topic is decided, append a doc to
+  `planning/docs/_generate_docs.py`, regenerate. Technical register by default (plain language only
+  when asked). Standing rule: every experiment observable ([[feedback-experiment-observability]]).
+  Preview Mermaid via `mmdc -i x.mmd -o reports/figures/x.png -p /tmp/puppeteer.json -b white -s 2`.
 - **Current tree:** root `README.md` + `.gitignore` + `CLAUDE.md` + `requirements.txt`;
-  `data/{raw,processed}/`; `planning/docs/` (16 .docx: 00-15 + _generate_docs.py);
-  `design/` (Mermaid diagrams — README only so far); `notebooks/`, `src/`, `tests/`,
-  `reports/figures/` (each a purpose-README, no code yet).
+  `data/{raw,processed}/`; `planning/docs/` (18 .docx: 00-17 + _generate_docs.py);
+  `design/` (README + 6 diagrams: project-architecture, data-cleaning, feature-engineering, two-track-modeling,
+  validation-flow, segments-to-actions); `notebooks/`, `src/`, `tests/`, `reports/figures/` (purpose-READMEs;
+  PNGs of all 6 diagrams; no code yet).
 - **File structure (LOCKED):** hybrid = numbered notebooks (narrate + call src) + `src/`
   reusable tested modules, built LAZILY (no empty stubs). `planning/` = the "why" (decisions),
   `design/` = the "how it's wired" (architecture/pipeline diagrams as Mermaid markdown).
@@ -32,11 +44,12 @@
   CLV = separate post-hoc layer joined on Customer ID (segment × CLV action grid); validate
   personas in 3 tiers (effect-size, classifier, external-variable gold standard); success =
   validated + interpretable + consistent + actionable + honest.
-- **➡️ NEXT:** Methodology designed end-to-end (docs 07-15) and file structure locked & created.
-  Immediate next = build `design/` diagrams (Mermaid pipeline/architecture — the implementation
-  blueprint). THEN design discussion #9 = data cleaning decisions (returns netting vs drop,
-  zero/neg prices, dupes, wholesaler flagging) → doc 16, THEN code `notebooks/01_cleaning` +
-  `src/data_prep.py` + `tests/test_data_prep.py`. EDA plan (#10) follows.
+- **➡️ NEXT:** All 6 core design diagrams DONE. Optional remaining: `experiment-map` (observability) +
+  light `data-eda`. Design file naming convention still TBD (only `project-architecture` agreed; rest named
+  pragmatically — may revisit). THEN START CODING: `notebooks/01_cleaning` + `src/data_prep.py` +
+  `tests/test_data_prep.py` against doc 16. (Also: a design/README update to list all 6 diagrams is pending.)
+- **Commit when allowed:** user paused commits for 2026-06-19; commit the uncommitted design diagrams +
+  doc 16 + status update once they give the go-ahead. Also: revoke leaked token ghp_5tk… reminder still stands.
 - **Not yet started:** new structure, any analysis code/notebooks.
 - **GitHub auth note:** `gh` active account = SajalHRX (personal). Switch back for LinkedIn
   work with `gh auth switch -u sajsingh_LinkedIn`.
