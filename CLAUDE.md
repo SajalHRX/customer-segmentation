@@ -8,9 +8,8 @@
 
 ## 🔖 STATUS (update this every session)
 
-- **Current phase:** Building `design/` Mermaid diagrams + locking remaining pre-code decisions.
-  No analysis code yet. ⚠️ **DO NOT commit — user paused commits 2026-06-19 ("I'll say when")**;
-  working tree has uncommitted design diagrams + docs 16-17 + doc-04 patch + status updates.
+- **Current phase:** Design phase COMPLETE & pushed (8 commits, 2026-06-20). 18 planning docs +
+  6 design diagrams. No analysis code yet. (Commit pause from 2026-06-19 is lifted — design batch committed.)
 - **Last done (2026-06-19→20):** (1) Cleaning decisions → doc 16 (DROP returns + track return-rate;
   invalid-records a-e, postage excluded; wholesaler → feature-eng as supporting). (2) Feature-engineering
   decisions (discussion #10 → doc 17): Tenure = first→anchor (customer age; PATCHED doc 04 which said
@@ -48,8 +47,7 @@
   light `data-eda`. Design file naming convention still TBD (only `project-architecture` agreed; rest named
   pragmatically — may revisit). THEN START CODING: `notebooks/01_cleaning` + `src/data_prep.py` +
   `tests/test_data_prep.py` against doc 16. (Also: a design/README update to list all 6 diagrams is pending.)
-- **Commit when allowed:** user paused commits for 2026-06-19; commit the uncommitted design diagrams +
-  doc 16 + status update once they give the go-ahead. Also: revoke leaked token ghp_5tk… reminder still stands.
+- **Reminder:** revoke leaked token ghp_5tk… (shared in chat 2026-06-17) still stands.
 - **Not yet started:** new structure, any analysis code/notebooks.
 - **GitHub auth note:** `gh` active account = SajalHRX (personal). Switch back for LinkedIn
   work with `gh auth switch -u sajsingh_LinkedIn`.
