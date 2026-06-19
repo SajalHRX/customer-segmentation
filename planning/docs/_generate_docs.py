@@ -136,6 +136,8 @@ table(d, ["Document", "Contents"], [
     ["13_Segment_Profiling_and_Validation", "Design discussion #7a - profiling clusters into named personas; validating they are real (3 tiers)"],
     ["14_Recommendations_and_Success_Criteria", "Design discussion #7b - the action/value-at-stake grid; what 'good' means for the project"],
     ["15_BGNBD_GammaGamma_CLV_Engine", "Design discussion #8 - the probabilistic CLV model (BG/NBD + Gamma-Gamma) in depth"],
+    ["16_Data_Cleaning_Decisions", "Design discussion #9 - the pre-processing logic: drop returns, invalid-records list, wholesaler flag placement"],
+    ["17_Feature_Engineering", "Design discussion #10 - collapse transactions to customer features in 3 lanes; Tenure/transform/single-purchase decisions"],
 ])
 para(d, "Documents 07+ are DESIGN DISCUSSIONS - decisions worked out topic-by-topic after planning, "
         "each recording the reasoning behind a methodological choice.")
@@ -309,7 +311,7 @@ table(d, ["Engineered feature", "Built from"], [
     ["Recency", "InvoiceDate (most recent purchase vs snapshot date)"],
     ["Frequency", "Count of distinct Invoice values"],
     ["Monetary", "Sum of Quantity x Price"],
-    ["Tenure", "First-to-last InvoiceDate span"],
+    ["Tenure", "First-purchase-to-anchor span (customer age; = BG/NBD T) -- see doc 17 Decision 1"],
     ["Average basket value", "Monetary / Frequency"],
 ])
 para(d, "These engineered columns - NOT the raw 8 - are the actual inputs to K-Means and the CLV model. "
@@ -1216,6 +1218,158 @@ numbered(d, "conditional_probability_alive(); conditional_expected_number_of_pur
 numbered(d, "Validate via calibration_and_holdout_data() + calibration plots (doc 08), across the 3/6/9-month "
             "cutoffs.")
 save(d, "15_BGNBD_GammaGamma_CLV_Engine.docx")
+
+
+# ---------------------------------------------------------------------------
+# 16 - DATA CLEANING DECISIONS  (Design discussion #9, 19 June 2026)
+# ---------------------------------------------------------------------------
+d = new_doc("Data Cleaning Decisions", "Design discussion #9 - the pre-processing logic, decided")
+para(d, "Added 19 June 2026. The specific cleaning decisions behind the Pre-processing stage, settled one "
+        "by one. Visualised as a 4-node flow in design/data-cleaning.md "
+        "(Load & Merge -> Drop Invalid Records -> Resolve Non-Purchases -> Clean Dataset).")
+
+h1(d, "Decision 1 - Resolve Non-Purchases: DROP, not net")
+para(d, "Question: cancellations (C-invoices) and negative-quantity returns reduce a customer's real value. "
+        "Net them out of Monetary, or drop them and model completed purchases? Example: buy GBP 1,000, return "
+        "GBP 900 -> DROP shows a GBP 1,000 customer; NET shows a GBP 100 customer.")
+bullet(d, "NET rejected: creates <= 0 Monetary edge cases (breaks log1p; Gamma-Gamma requires strictly "
+          "positive per-transaction values) and conflicts with the lifetimes workflow (BG/NBD needs purchase "
+          "events; Gamma-Gamma needs positive values).")
+bullet(d, "DECISION = DROP: model Frequency/Recency/Tenure/Monetary on completed purchases only (positive, "
+          "non-cancelled invoices). The return signal is NOT discarded - compute a per-customer "
+          "return/cancellation RATE as its own behavioural feature, which doubles as a tier-2 "
+          "external-validation variable (doc 13).")
+bullet(d, "Honest caveat to report: a purchase later fully returned still counts as a purchase (no line-level "
+          "matching) - but the return-rate feature surfaces that behaviour, so it is not hidden.")
+
+h1(d, "Decision 2 - Drop Invalid Records (rules a-e)")
+table(d, ["Rule", "Drop"], [
+    ["a. Missing Customer ID", "rows with no Customer ID (~22.8%) - cannot attribute to a customer"],
+    ["b. Non-product StockCodes", "service/fee/adjustment/test codes (list below) - POSTAGE EXCLUDED"],
+    ["c. Invalid price", "Price <= 0 (free items, adjustments, errors)"],
+    ["d. Zero quantity", "Quantity == 0 (negatives handled by Decision 1)"],
+    ["e. Exact duplicates", "fully-identical rows (Invoice+StockCode+Qty+Date+Price+ID)"],
+])
+para(d, "Non-product exclusion list (curated, verified in EDA): POST, DOT, C2, BANK CHARGES/CHARGE, AMAZONFEE, "
+        "ADJUST/ADJUST2, M/m, D, S, B, CRUK, TEST001/2, gift_0001*, PADS.")
+para(d, "Principle: real products are 5-6 digit codes (sometimes a letter suffix like 85123A); the "
+        "alphabetic/special codes are fees, postage, adjustments, or tests - they distort basket size and "
+        "Monetary, so they are excluded.")
+para(d, "Postage (POST/DOT/C2) = EXCLUDED: it is a fee, not a product purchase; including it inflates basket "
+        "value. Monetary therefore reflects PRODUCT spend. Optional refinement: Description-based non-sale "
+        "rows (Manual, Adjust bad debt, damaged, found, ?, lost, smashed, wrongly coded) - let EDA surface "
+        "them and add stragglers to the exclusion list rather than hard-coding more now.")
+
+h1(d, "Decision 3 - Wholesaler flagging: moved to feature engineering")
+bullet(d, "Placement: 'wholesaler' is a CUSTOMER-level judgement (needs aggregation), but cleaning operates at "
+          "the transaction-ROW level. So the flag belongs in FEATURE ENGINEERING, not cleaning. The cleaning "
+          "flow therefore ends at Clean Dataset (4 nodes); the wholesaler flag migrates to the "
+          "feature-engineering stage.")
+bullet(d, "Method: per-customer bulk metric = median units per invoice (robust to one odd order); FLAG the "
+          "extreme upper tail via a documented cutoff (a high percentile ~ top 5%, or a robust IQR rule on "
+          "log-units), verified in EDA. Keep the continuous metric too. Based on quantity-per-order (the "
+          "defining wholesale behaviour), not spend.")
+bullet(d, "It is a FLAG, not a filter - wholesalers stay in the data (they are likely the Champions); the tag "
+          "is for profiling + as a possible external-validation covariate.")
+
+h1(d, "The unifying principle - core vs supporting variables")
+para(d, "The wholesaler flag is one member of a SUPPORTING-variables lane that runs alongside the core "
+        "feature pipeline:")
+bullet(d, "Core lane (R/F/M/Tenure) -> drives the CLUSTERING.")
+bullet(d, "Supporting lane (wholesaler flag, Country, product mix, return-rate, predicted CLV) -> NEVER "
+          "enters the clustering matrix, but feeds EDA, validation, profiling, and recommendations.")
+para(d, "Rule of thumb threading the whole project: a supporting variable EXPLAINS and VALIDATES the "
+        "segments; it never DEFINES them. This keeps the segmentation behaviourally pure and provides a "
+        "stable of independent variables to interpret and stress-test it.")
+para(d, "Strategic fork EDA must resolve: are wholesalers a DISTINCT population warranting SEPARATE B2B/B2C "
+        "segmentation, or do we cluster everyone together and flag? Decide after thorough EDA.")
+
+h1(d, "Output & reconciliation")
+para(d, "The Clean Dataset = completed purchases only, identifiable customers, product lines. Report a "
+        "row-count RECONCILIATION (raw N -> after each step -> final M) so every dropped row is accounted "
+        "for - cleaning decisions must be transparent, not silent.")
+save(d, "16_Data_Cleaning_Decisions.docx")
+
+
+# ---------------------------------------------------------------------------
+# 17 - FEATURE ENGINEERING  (Design discussion #10, 19 June 2026)
+# ---------------------------------------------------------------------------
+d = new_doc("Feature Engineering", "Design discussion #10 - collapse transactions to customer features, in three lanes")
+para(d, "Added 19 June 2026. Consolidates the feature-engineering design (drawing on docs 04, 09, 12, 15, "
+        "16) plus three sub-decisions locked here. Visualised in design/feature-engineering.md.")
+
+h1(d, "Purpose")
+para(d, "Collapse the 8 transaction columns (1 row per invoice line, completed purchases) into ~5 engineered "
+        "features per CUSTOMER (1 row per customer). Doc 04 principle: the columns are the problem; every "
+        "feature must trace to a justified column. All time-based features are anchored to 2012-01-01 "
+        "(doc 08). There is an intermediate INVOICE-level rollup (per invoice total = sum Quantity x Price) "
+        "before the customer-level rollup.")
+
+h1(d, "The three lanes (core vs supporting - doc 16)")
+table(d, ["Lane", "Features", "Destination"], [
+    ["Core (clustering)", "R / F / M / Tenure (+ AvgBasket profiling-only)", "drives the CLUSTERING"],
+    ["CLV inputs (raw)", "frequency / recency(t_x) / T / monetary", "the CLV model"],
+    ["Supporting", "wholesaler flag, return-rate, country, product mix", "EDA / validation / profiling"],
+])
+
+h1(d, "Core features (clustering)")
+table(d, ["Feature", "Computed", "Transform"], [
+    ["Recency", "days from last purchase to anchor; lower = more recent", "raw unless EDA skew says"],
+    ["Frequency", "count of distinct purchase invoices", "log1p"],
+    ["Monetary", "sum Quantity x Price over completed lines (gross product spend; returns dropped, postage excluded)", "log1p"],
+    ["Tenure", "days from FIRST purchase to anchor (customer age) - Decision 1", "raw unless EDA skew says - Decision 2"],
+    ["AvgBasket", "Monetary / Frequency", "log1p; PROFILING-ONLY (= M/F redundancy, doc 09)"],
+])
+para(d, "Then RobustScaler (primary) / StandardScaler (experiment); cluster on R/F/M/Tenure (scaled); persist "
+        "the fitted scaler.")
+
+h1(d, "CLV inputs - the naming trap (doc 15) - RAW, not logged/scaled")
+table(d, ["Input", "Definition", "vs the core feature"], [
+    ["frequency", "invoices - 1 (first purchase = birth)", "core Frequency = invoices"],
+    ["recency (t_x)", "age at last purchase = first->last span", "core Recency = days SINCE last"],
+    ["T", "first -> anchor (customer age)", "now aligned with core Tenure (Decision 1)"],
+    ["monetary_value", "average value per transaction", "core Monetary = total"],
+])
+para(d, "Built via lifetimes.summary_data_from_transaction_data.")
+
+h1(d, "Supporting variables (doc 16) - never clustering inputs")
+bullet(d, "Wholesaler flag: median units per invoice -> flag the extreme tail; keep the continuous metric.")
+bullet(d, "Return-rate: returns / purchases (from the return signal captured during cleaning).")
+bullet(d, "Country (the customer's country); Product mix (top categories, diversity).")
+para(d, "These feed EDA, tier-2 validation, profiling, and recommendations - they EXPLAIN and VALIDATE the "
+        "segments, never DEFINE them.")
+
+h1(d, "Feature EDA checkpoint (post-aggregation)")
+para(d, "Where the transform decisions get JUSTIFIED, not assumed: verify SKEW (histograms, skewness; "
+        "optionally Box-Cox lambda~0) -> confirm log1p on F/M/AvgBasket and decide Recency/Tenure; check "
+        "CORRELATIONS -> confirm the AvgBasket = M/F redundancy and whether Tenure is redundant with "
+        "Frequency; inspect the WHOLESALER tail -> set the flag cutoff and decide the B2B/B2C fork. Also "
+        "tests doc 05 hypothesis H3 (Frequency & Monetary associated; Recency independent of spend).")
+
+h1(d, "Locked sub-decisions (discussion #10)")
+h2(d, "Decision 1 - Tenure = first->anchor (customer age)")
+bullet(d, "Consistent with BG/NBD's T; handles single-purchase customers (a real age, not 0); more "
+          "independent of Frequency (so it survives the redundancy check and adds real signal); paired with "
+          "Recency it gives lifecycle position.")
+bullet(d, "Business: distinguishes NEW vs ESTABLISHED, which changes the action even at equal R/F/M (an "
+          "intense newcomer vs an occasional long-timer get different playbooks).")
+bullet(d, "PATCHES doc 04, which previously defined Tenure as 'first-to-last span'.")
+h2(d, "Decision 2 - Tenure transform decided by Feature EDA")
+bullet(d, "Tenure is a BOUNDED time span (~0-730 days), not multiplicative/Pareto -> unlikely to need a log "
+          "(same boat as Recency). Per doc 09 ('do not blindly log every feature'), decide on evidence: "
+          "transform only if the skew diagnostic warrants it. Prior expectation = no log.")
+h2(d, "Decision 3 - Single-purchase customers: keep, as a distinct group")
+bullet(d, "~30-40% of customers and a core CRM question (convert one-timers) -> do NOT drop them.")
+bullet(d, "Technical degeneracy: for a one-timer first = last, so Recency = Tenure and AvgBasket = Monetary - "
+          "they collapse onto a line in feature space. (first->anchor degrades gracefully: Tenure = Recency "
+          "still varies; first->last would give Tenure = 0 for all of them - reconfirms Decision 1.)")
+bullet(d, "Clustering: keep them in, but Feature EDA decides the structure - (i) cluster everyone and let a "
+          "one-timer segment emerge, or (ii) split one-timers off and cluster the richer repeat-buyer space "
+          "(lean ii).")
+bullet(d, "CLV: BG/NBD includes them (frequency = 0); Gamma-Gamma excludes them (needs frequency > 0) -> "
+          "their per-transaction value falls back to the population mean. Always report the single-purchase "
+          "share (a CLV-reliability caveat, doc 15).")
+save(d, "17_Feature_Engineering.docx")
 
 
 print("\nAll documents generated in:", OUT_DIR)
