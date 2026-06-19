@@ -19,10 +19,11 @@ fidelity) live in `reports/figures/`.
 | `two-track-modeling.md` | clustering ‖ CLV, meeting on `Customer ID` (no circularity) | Modeling |
 | `validation-flow.md` | two lanes: "are the segments real?" + "does the CLV model predict?" | Validation |
 | `segments-to-actions.md` | profile → name personas → segment × CLV grid → recommendations | Segmentation → Recommendations |
+| `experiment-map.md` | every tracked experiment (scaling, weighting, K, method, structure, CLV holdout) | cross-cutting (observability) |
 
 > Styling: `securityLevel: loose` + `htmlLabels: true` for the bold-title / italic-descriptor look
 > (the exported PNG honours it fully; GitHub's strict mode keeps the bold title but may drop the
 > grey/italic descriptor styling).
 
-Optional / not yet built: `experiment-map` (the tracked experiments — observability) and a light
-`data-eda`.
+`data-eda` is intentionally NOT a design diagram — it's real exploration (figures/charts) that lives
+in the coding phase: a raw-data quality pass at the top of `01_cleaning`, and behavioural EDA in `02_eda`.

@@ -43,10 +43,11 @@
   CLV = separate post-hoc layer joined on Customer ID (segment × CLV action grid); validate
   personas in 3 tiers (effect-size, classifier, external-variable gold standard); success =
   validated + interpretable + consistent + actionable + honest.
-- **➡️ NEXT:** All 6 core design diagrams DONE. Optional remaining: `experiment-map` (observability) +
-  light `data-eda`. Design file naming convention still TBD (only `project-architecture` agreed; rest named
-  pragmatically — may revisit). THEN START CODING: `notebooks/01_cleaning` + `src/data_prep.py` +
-  `tests/test_data_prep.py` against doc 16. (Also: a design/README update to list all 6 diagrams is pending.)
+- **➡️ NEXT:** Design DONE — 7 diagrams (6 core + `experiment-map`). `data-eda` is NOT a diagram; it's
+  real EDA in the coding phase (raw-quality pass atop `01_cleaning` + behavioural EDA in `02_eda`).
+  START CODING: `notebooks/01_cleaning` + `src/data_prep.py` + `tests/test_data_prep.py` against doc 16 —
+  first time hitting the real data (load xlsx, apply cleaning rules, row-count reconciliation).
+  Design file naming convention still loosely TBD (only `project-architecture` formally agreed).
 - **Reminder:** revoke leaked token ghp_5tk… (shared in chat 2026-06-17) still stands.
 - **Not yet started:** new structure, any analysis code/notebooks.
 - **GitHub auth note:** `gh` active account = SajalHRX (personal). Switch back for LinkedIn
