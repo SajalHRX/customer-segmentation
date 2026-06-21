@@ -138,6 +138,7 @@ table(d, ["Document", "Contents"], [
     ["15_BGNBD_GammaGamma_CLV_Engine", "Design discussion #8 - the probabilistic CLV model (BG/NBD + Gamma-Gamma) in depth"],
     ["16_Data_Cleaning_Decisions", "Design discussion #9 - the pre-processing logic: drop returns, invalid-records list, wholesaler flag placement"],
     ["17_Feature_Engineering", "Design discussion #10 - collapse transactions to customer features in 3 lanes; Tenure/transform/single-purchase decisions"],
+    ["18_CLV_Library_and_Language_Strategy", "Design discussion #11 - switch lifetimes -> PyMC-Marketing (Bayesian, Python 3.12); Python-primary + R cross-validation"],
 ])
 para(d, "Documents 07+ are DESIGN DISCUSSIONS - decisions worked out topic-by-topic after planning, "
         "each recording the reasoning behind a methodological choice.")
@@ -1125,8 +1126,11 @@ save(d, "14_Recommendations_and_Success_Criteria.docx")
 # 15 - BG/NBD + GAMMA-GAMMA CLV ENGINE  (Design discussion #8, 18 June 2026)
 # ---------------------------------------------------------------------------
 d = new_doc("BG/NBD + Gamma-Gamma (CLV Engine)", "Design discussion #8 - the probabilistic model behind predicted CLV")
-para(d, "Added 18 June 2026. The probabilistic engine that produces each customer's predicted CLV, used as a "
-        "separate post-hoc layer (doc 12) and validated by temporal holdout (doc 08).")
+para(d, "Added 18 June 2026 (CLV engine updated 21 June 2026 -> PyMC-Marketing). The probabilistic engine "
+        "that produces each customer's predicted CLV, used as a separate post-hoc layer (doc 12) and "
+        "validated by temporal holdout (doc 08). Implemented with PyMC-Marketing (Bayesian); the library & "
+        "language decision is recorded in doc 18. Sections 1-7 below are library-agnostic (the BTYD model "
+        "story); section 8+ is the PyMC-Marketing implementation.")
 
 h1(d, "1. The problem these models solve")
 para(d, "Retail is NON-CONTRACTUAL: customers never announce they have left - they just stop buying. So when a "
@@ -1208,15 +1212,31 @@ bullet(d, "Both assume non-contractual behaviour (fits retail) and need enough R
           "customers (frequency = 0, a large slice of this dataset) are handled but carry high uncertainty; "
           "state their share.")
 
-h1(d, "8. Practical pipeline (lifetimes)")
-numbered(d, "summary_data_from_transaction_data() -> per-customer frequency, recency, T, monetary_value.")
-numbered(d, "BetaGeoFitter().fit(frequency, recency, T) -> r, alpha, a, b.")
+h1(d, "8. Practical pipeline (PyMC-Marketing - Bayesian; library decision in doc 18)")
+para(d, "Implemented with PyMC-Marketing (the maintained, Bayesian successor to lifetimes). Same RFM-summary "
+        "inputs - the naming trap above STILL applies (frequency = invoices-1, recency = t_x, T, monetary).")
+numbered(d, "Build the per-customer summary: customer_id, frequency, recency (t_x), T, monetary_value "
+            "(pandas, or PyMC-Marketing's clv utilities).")
+numbered(d, "BetaGeoModel(data=df).fit() -> POSTERIOR over r, alpha, a, b. fit method: 'map' (fast point "
+            "estimate, lifetimes-like) or 'mcmc'/NUTS (full posterior = uncertainty).")
 numbered(d, "Check freq <-> monetary correlation ~0; filter to repeat buyers (frequency > 0); "
-            "GammaGammaFitter().fit(...).")
-numbered(d, "conditional_probability_alive(); conditional_expected_number_of_purchases_up_to_time(t); "
-            "customer_lifetime_value(...).")
-numbered(d, "Validate via calibration_and_holdout_data() + calibration plots (doc 08), across the 3/6/9-month "
-            "cutoffs.")
+            "GammaGammaModel(data=df).fit().")
+numbered(d, "expected_probability_alive(); expected_num_purchases(future_t); "
+            "expected_customer_lifetime_value(...) -> predictions WITH credible intervals.")
+numbered(d, "Validate: temporal holdout (3/6/9-mo, doc 08) + Bayesian posterior predictive checks + "
+            "convergence diagnostics via arviz (R-hat, ESS, divergences).")
+
+h1(d, "9. What the Bayesian approach adds (vs frequentist lifetimes)")
+bullet(d, "Uncertainty per customer: a POSTERIOR for predicted CLV / P(alive), not a point estimate -> "
+          "credible intervals (e.g. 'GBP 312, 90% CI [210, 460]'). Decision-relevant under a finite budget.")
+bullet(d, "Posterior predictive checks: simulate from the fitted model and compare the WHOLE distribution of "
+          "predicted vs actual behaviour - a richer validation than a single calibration plot.")
+bullet(d, "Convergence diagnostics (arviz): R-hat, effective sample size, divergences -> SHOW the fit is "
+          "trustworthy, not just assert it.")
+bullet(d, "Priors & extensibility: weakly-informative priors; can add covariates / hierarchy later "
+          "(lifetimes could not).")
+bullet(d, "Cross-validated against R CLVTools (frequentist) - Bayesian-vs-frequentist agreement is itself a "
+          "reportable result (doc 18).")
 save(d, "15_BGNBD_GammaGamma_CLV_Engine.docx")
 
 
@@ -1370,6 +1390,64 @@ bullet(d, "CLV: BG/NBD includes them (frequency = 0); Gamma-Gamma excludes them 
           "their per-transaction value falls back to the population mean. Always report the single-purchase "
           "share (a CLV-reliability caveat, doc 15).")
 save(d, "17_Feature_Engineering.docx")
+
+
+# ---------------------------------------------------------------------------
+# 18 - CLV LIBRARY & LANGUAGE STRATEGY  (Design discussion #11, 21 June 2026)
+# ---------------------------------------------------------------------------
+d = new_doc("CLV Library & Language Strategy", "Design discussion #11 - PyMC-Marketing, Python 3.12, and the R cross-validation layer")
+para(d, "Added 21 June 2026. Two linked decisions: which library implements the CLV model, and whether the "
+        "project is Python, R, or both. Driven by verification (we installed and tested, did not assume).")
+
+h1(d, "The lifetimes problem")
+bullet(d, "lifetimes is UNMAINTAINED (last release 2021). On Python 3.9, pip silently backtracks to an "
+          "ancient pymc-marketing 0.4.2 / arviz 0.17 that crashes against modern scipy (verified). lifetimes "
+          "itself works on 3.9, but living on an unmaintained library is a reproducibility risk for a "
+          "portfolio piece.")
+bullet(d, "lifelines is NOT a replacement - it is survival analysis (Kaplan-Meier/Cox), a different tool.")
+
+h1(d, "Decision A - switch to PyMC-Marketing (Bayesian), on Python 3.12")
+para(d, "PyMC-Marketing (PyMC Labs) is the maintained, Bayesian successor; its clv module reimplements "
+        "BG/NBD (BetaGeoModel), Pareto/NBD, Gamma-Gamma, etc. Same RFM-summary inputs (naming trap still "
+        "applies). VERIFIED: on Python 3.12, pymc-marketing 0.19.4 / pymc 5.28 installs and builds a "
+        "BetaGeoModel cleanly. So the project is standardised on Python 3.12 (system 3.9 is too old).")
+table(d, ["", "lifetimes", "PyMC-Marketing"], [
+    ["Maintained", "no (2021)", "yes (active)"],
+    ["Estimates", "frequentist point (MLE)", "Bayesian posteriors (+ MAP option)"],
+    ["Uncertainty", "none", "credible intervals per customer"],
+    ["Validation", "calibration plot", "calibration + posterior predictive checks + arviz diagnostics"],
+    ["Cost", "light", "heavier, slower (MCMC), needs Python >=3.10"],
+])
+para(d, "Why it fits an MSc Statistics portfolio: 'I built a Bayesian BTYD model with uncertainty "
+        "quantification and posterior predictive checks' is a stronger story than a point-estimate fit, while "
+        "staying in Python (broad industry-DS employability) and reusing all existing design (only doc 15's "
+        "implementation specifics change).")
+
+h1(d, "Decision B - dual language: Python primary + R cross-validation layer")
+para(d, "Build the FULL project in Python (PyMC-Marketing). Then use R to INDEPENDENTLY reproduce the key "
+        "statistical results and show they agree - turning 'two languages' into a rigor story "
+        "(cross-tool reproducibility), not 2x work. The R layer is a planned END-STAGE enhancement, not a "
+        "parallel build from day one.")
+table(d, ["Cross-check", "R tool", "Why R is strong here"], [
+    ["Clustering stability", "fpc::clusterboot", "Hennig's own package - literally the bootstrap-Jaccard of doc 10"],
+    ["Choosing K", "NbClust", "30 K-selection indices in one call (doc 10 triangulation)"],
+    ["GMM", "mclust", "GMM with BIC model selection built in (doc 11)"],
+    ["CLV", "CLVTools", "maintained; frequentist - Bayesian (PyMC) vs frequentist (CLVTools) agreement is itself a result"],
+    ["Figures / report", "ggplot2 / Quarto", "best-in-class stats graphics + reproducible reports"],
+])
+bullet(d, "Reproducing segments + CLV across two independent toolchains is effectively an extra VALIDATION "
+          "tier (cross-tool), and showcases both languages without doubling the project.")
+bullet(d, "Rejected alternatives: (i) full parallel build in both = ~2x work / maintenance, dilutes focus; "
+          "(ii) split phases across languages = fragments the project (CSV hand-offs, two narratives), harder "
+          "to follow. Targeted cross-validation is the smart middle.")
+bullet(d, "Language choice driver: Python primary = industry DS/ML employability; R cross-check = statistics "
+          "credibility. Doing both (selectively) gets both signals.")
+
+h1(d, "Consequences")
+bullet(d, "requirements.txt: lifetimes removed; pymc-marketing + arviz added; project pinned to Python >=3.12.")
+bullet(d, "doc 15 section 8+ updated to the PyMC-Marketing pipeline (Bayesian).")
+bullet(d, "venv rebuilt on Homebrew python3.12. R toolchain set up later, when the R cross-validation layer begins.")
+save(d, "18_CLV_Library_and_Language_Strategy.docx")
 
 
 print("\nAll documents generated in:", OUT_DIR)
