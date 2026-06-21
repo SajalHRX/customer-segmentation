@@ -34,7 +34,17 @@ def load_raw(path=None) -> pd.DataFrame:
         df = df.copy()
         df["SourceSheet"] = name
         frames.append(df)
-    return pd.concat(frames, ignore_index=True)
+    out = pd.concat(frames, ignore_index=True)
+
+    # Normalize dtypes so the table is consistent and Parquet-safe. StockCode and Invoice mix
+    # numeric and alphanumeric values (e.g. '85123A', '79323P', 'C536379'), which pandas reads as
+    # a mixed 'object' column -- Parquet needs one type per column. Coerce the string-like columns
+    # to the nullable 'string' dtype (preserves missing values as <NA>), and Customer ID to a
+    # nullable integer (it is a float with NaNs on load).
+    string_cols = ["Invoice", "StockCode", "Description", "Country", "SourceSheet"]
+    out[string_cols] = out[string_cols].astype("string")
+    out["Customer ID"] = out["Customer ID"].astype("Int64")
+    return out
 
 
 def drop_invalid_records(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, int]]:
