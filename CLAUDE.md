@@ -8,8 +8,17 @@
 
 ## 🔖 STATUS (update this every session)
 
-- **Current phase:** Design COMPLETE (19 planning docs + 7 diagrams). Environment set up. CLV library
-  switched to PyMC-Marketing (Bayesian) on Python 3.12. About to START CODING `01_cleaning`.
+- **Current phase:** CODING. Phase 1 (CLEANING) DONE & pushed: `src/data_prep.py` = load_raw +
+  drop_invalid_records + resolve_non_purchases + build_clean_table (all unit-tested, doc 16);
+  `notebooks/01_cleaning.ipynb` executed (raw-quality EDA + reconciliation figures);
+  `data/processed/clean_transactions.parquet` (790,704 rows, 5,852 customers) + non_purchases.parquet saved.
+  Reconciliation balances losslessly. NEXT = Phase 2 EDA (`02_eda`), then features (`03_features`).
+- **Coding conventions in play:** hybrid (logic in `src/` unit-tested via `pytest -m "not slow"`; notebooks
+  thin, call src). Notebooks authored as jupytext `.py` (percent) → `jupytext --to notebook --execute` →
+  `.ipynb` WITH outputs (commit both). Processed data → Parquet in data/processed (gitignored; ~4s reload
+  vs ~33s xlsx). `src/utils.py` holds constants (ANCHOR_DATE, paths, NON_PRODUCT_STOCKCODES, RANDOM_SEED).
+  Notebook import shim: add project root to sys.path. ALWAYS narrate code line-by-line
+  ([[feedback-explain-code-line-by-line]]).
 - **Tooling locked (2026-06-21, discussion #11 → doc 18):** Python **3.12** (Homebrew python3.12) — NOT
   system 3.9 (too old for PyMC-Marketing). `.venv` rebuilt on 3.12; full stack verified (pandas 3.0.3,
   sklearn 1.9, pymc-marketing 0.19.4, pymc 5.28). CLV = **PyMC-Marketing** (Bayesian BG/NBD + Gamma-Gamma,
