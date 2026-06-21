@@ -8,8 +8,15 @@
 
 ## 🔖 STATUS (update this every session)
 
-- **Current phase:** Design phase COMPLETE & pushed (8 commits, 2026-06-20). 18 planning docs +
-  6 design diagrams. No analysis code yet. (Commit pause from 2026-06-19 is lifted — design batch committed.)
+- **Current phase:** Design COMPLETE (19 planning docs + 7 diagrams). Environment set up. CLV library
+  switched to PyMC-Marketing (Bayesian) on Python 3.12. About to START CODING `01_cleaning`.
+- **Tooling locked (2026-06-21, discussion #11 → doc 18):** Python **3.12** (Homebrew python3.12) — NOT
+  system 3.9 (too old for PyMC-Marketing). `.venv` rebuilt on 3.12; full stack verified (pandas 3.0.3,
+  sklearn 1.9, pymc-marketing 0.19.4, pymc 5.28). CLV = **PyMC-Marketing** (Bayesian BG/NBD + Gamma-Gamma,
+  uncertainty + posterior predictive checks), replacing unmaintained `lifetimes`. **Dual-language:** Python
+  primary + planned R cross-validation layer (clustering via mclust/fpc::clusterboot, CLV via CLVTools) as a
+  cross-tool reproducibility check (end-stage, not parallel). Doc gen uses SYSTEM python3 (has python-docx);
+  the .venv (3.12) does NOT have python-docx.
 - **Last done (2026-06-19→20):** (1) Cleaning decisions → doc 16 (DROP returns + track return-rate;
   invalid-records a-e, postage excluded; wholesaler → feature-eng as supporting). (2) Feature-engineering
   decisions (discussion #10 → doc 17): Tenure = first→anchor (customer age; PATCHED doc 04 which said
@@ -28,11 +35,10 @@
   `planning/docs/_generate_docs.py`, regenerate. Technical register by default (plain language only
   when asked). Standing rule: every experiment observable ([[feedback-experiment-observability]]).
   Preview Mermaid via `mmdc -i x.mmd -o reports/figures/x.png -p /tmp/puppeteer.json -b white -s 2`.
-- **Current tree:** root `README.md` + `.gitignore` + `CLAUDE.md` + `requirements.txt`;
-  `data/{raw,processed}/`; `planning/docs/` (18 .docx: 00-17 + _generate_docs.py);
-  `design/` (README + 6 diagrams: project-architecture, data-cleaning, feature-engineering, two-track-modeling,
-  validation-flow, segments-to-actions); `notebooks/`, `src/`, `tests/`, `reports/figures/` (purpose-READMEs;
-  PNGs of all 6 diagrams; no code yet).
+- **Current tree:** root `README.md` + `.gitignore` + `CLAUDE.md` + `requirements.txt`; `.venv/` (py3.12, gitignored);
+  `data/{raw,processed}/`; `planning/docs/` (19 .docx: 00-18 + _generate_docs.py);
+  `design/` (README + 7 diagrams incl. experiment-map); `notebooks/`, `src/`, `tests/`, `reports/figures/`
+  (purpose-READMEs; PNGs of all 7 diagrams; no analysis code yet).
 - **File structure (LOCKED):** hybrid = numbered notebooks (narrate + call src) + `src/`
   reusable tested modules, built LAZILY (no empty stubs). `planning/` = the "why" (decisions),
   `design/` = the "how it's wired" (architecture/pipeline diagrams as Mermaid markdown).

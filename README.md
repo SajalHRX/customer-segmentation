@@ -7,14 +7,17 @@ prioritised marketing actions.
 
 > **One-liner:** clean 1M+ real transactions → engineer RFM features → segment customers
 > (K-Means, **validated** with silhouette / gap / bootstrap stability, **compared** against
-> GMM and hierarchical) → layer a **probabilistic** BG/NBD + Gamma-Gamma CLV model → translate
-> into a segment × value action grid.
+> GMM and hierarchical) → layer a **Bayesian** BG/NBD + Gamma-Gamma CLV model (PyMC-Marketing,
+> with uncertainty) → translate into a segment × value action grid.
 
 ## Status
 
 **Design complete; implementation starting.** The full methodology — every decision and its
-reasoning — is recorded in [`planning/docs/`](planning/docs) (16 documents, 8 design
+reasoning — is recorded in [`planning/docs/`](planning/docs) (19 documents, 11 design
 discussions). Architecture/pipeline diagrams live in [`design/`](design). No analysis code yet.
+
+**Built in Python (primary), with a planned R cross-validation layer** (clustering + CLV
+reproduced in R as a cross-tool reproducibility check — see `planning/docs/18`).
 
 ## Repository layout
 
@@ -37,8 +40,10 @@ The raw `.xlsx` is **not** committed; place it in `data/raw/` before running. Se
 
 ## Getting started
 
+Requires **Python ≥ 3.12** (PyMC-Marketing needs ≥ 3.10).
+
 ```bash
-python -m venv .venv && source .venv/bin/activate
+python3.12 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 # place online_retail_II.xlsx in data/raw/, then open notebooks/ in order
 ```
