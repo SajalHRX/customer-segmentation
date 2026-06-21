@@ -4,6 +4,7 @@
 pandas>=2.0
 numpy>=1.26
 openpyxl>=3.1          # read the Online Retail II .xlsx
+pyarrow>=15            # fast Parquet I/O for processed tables
 
 # Modelling & validation
 scikit-learn>=1.4      # K-Means, GMM, scaling, silhouette
@@ -18,6 +19,7 @@ seaborn>=0.13
 # Notebook environment
 jupyter>=1.0
 notebook>=7.0
+jupytext>=1.16         # pair notebooks with .py source (clean diffs)
 
 # Testing
 pytest>=8.0
