@@ -43,7 +43,9 @@
 - **Working pattern:** topic by topic, in depth; after each topic is decided, append a doc to
   `planning/docs/_generate_docs.py`, regenerate. Technical register by default (plain language only
   when asked). Standing rule: every experiment observable ([[feedback-experiment-observability]]).
-  Preview Mermaid via `mmdc -i x.mmd -o reports/figures/x.png -p /tmp/puppeteer.json -b white -s 2`.
+  Preview Mermaid via `mmdc -i x.mmd -o reports/figures/design/x.png -p /tmp/puppeteer.json -b white -s 2`.
+  Figures are GROUPED: design renders → `reports/figures/design/`; analysis figures →
+  `reports/figures/<phase>/` via `utils.figure_path(phase, name)` (e.g. `01_cleaning/reconciliation.png`).
 - **Current tree:** root `README.md` + `.gitignore` + `CLAUDE.md` + `requirements.txt`; `.venv/` (py3.12, gitignored);
   `data/{raw,processed}/`; `planning/docs/` (19 .docx: 00-18 + _generate_docs.py);
   `design/` (README + 7 diagrams incl. experiment-map); `notebooks/`, `src/`, `tests/`, `reports/figures/`

@@ -2,7 +2,9 @@
 
 Project outputs for a reader who won't run the code.
 
-- `figures/` — exported plots (the observability artifacts: comparison tables, calibration
-  plots, snake plots, dendrograms, PCA scatters, the segment × CLV grid).
+- `figures/` — exported plots, **grouped into subfolders**:
+  - `figures/design/` — renders of the `design/*.md` Mermaid diagrams (architecture/pipeline).
+  - `figures/<phase>/` — analysis figures per pipeline phase (`01_cleaning/`, `02_eda/`, …),
+    created on demand by `src.utils.figure_path(phase, name)`.
 - the written statistical report (added at the end) — narrative tying methods → results →
   recommendations back to the problem statement.

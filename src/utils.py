@@ -53,3 +53,15 @@ def is_non_product(stockcode: object) -> bool:
     """True if a StockCode is a fee/adjustment/test/gift-card (not a real product)."""
     s = str(stockcode).strip()
     return s in NON_PRODUCT_STOCKCODES or s.lower().startswith(GIFT_STOCKCODE_PREFIX)
+
+
+def figure_path(phase: str, name: str) -> Path:
+    """Return ``reports/figures/<phase>/<name>``, creating the ``<phase>`` folder if needed.
+
+    Groups analysis figures by pipeline phase (e.g. '01_cleaning', '02_eda'), so they don't all
+    pile into one directory. (Design-diagram renders live separately under
+    ``reports/figures/design/``.)
+    """
+    folder = REPORTS_FIGURES / phase
+    folder.mkdir(parents=True, exist_ok=True)
+    return folder / name

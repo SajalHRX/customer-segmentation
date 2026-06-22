@@ -5,7 +5,7 @@ complementary to `planning/` (the *"why we chose it"*).
 
 Diagrams are written as **Mermaid inside markdown** so they render natively on GitHub,
 stay version-controlled, and diff cleanly. Exported PNGs (rendered via `mmdc`, higher
-fidelity) live in `reports/figures/`.
+fidelity) live in `reports/figures/design/`.
 
 ## Diagrams
 

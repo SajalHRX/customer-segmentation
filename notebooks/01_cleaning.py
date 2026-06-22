@@ -5,6 +5,8 @@
 #     text_representation:
 #       extension: .py
 #       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.19.3
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -88,7 +90,7 @@ ax.set_xlabel("rows")
 for i, v in enumerate(s):
     ax.text(v, i, f" {v:,}", va="center", fontsize=9)
 fig.tight_layout()
-fig.savefig(utils.REPORTS_FIGURES / "01_raw_quirks.png", dpi=150, bbox_inches="tight")
+fig.savefig(utils.figure_path("01_cleaning", "raw_quirks.png"), dpi=150, bbox_inches="tight")
 plt.show()
 
 # %% [markdown]
@@ -121,7 +123,7 @@ ax.set_xlabel("rows removed")
 for i, v in enumerate(s):
     ax.text(v, i, f" {v:,}", va="center", fontsize=9)
 fig.tight_layout()
-fig.savefig(utils.REPORTS_FIGURES / "01_cleaning_reconciliation.png", dpi=150, bbox_inches="tight")
+fig.savefig(utils.figure_path("01_cleaning", "reconciliation.png"), dpi=150, bbox_inches="tight")
 plt.show()
 
 # %% [markdown]
