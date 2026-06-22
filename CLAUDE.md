@@ -12,7 +12,13 @@
   drop_invalid_records + resolve_non_purchases + build_clean_table (all unit-tested, doc 16);
   `notebooks/01_cleaning.ipynb` executed (raw-quality EDA + reconciliation figures);
   `data/processed/clean_transactions.parquet` (790,704 rows, 5,852 customers) + non_purchases.parquet saved.
-  Reconciliation balances losslessly. NEXT = Phase 2 EDA (`02_eda`), then features (`03_features`).
+  Reconciliation balances losslessly. **Phase 2 (EDA) DONE & pushed:** `02_eda.ipynb` — Pareto
+  (top 20% = 77% of revenue), 27.6% one-time buyers, spend skew 25.6→0.27 via log1p, UK 83.8% of
+  revenue; 5 figures in `reports/figures/02_eda/`. Every EDA finding empirically confirmed a design
+  decision. **NEXT = Phase 3 features:** `src/features.py` (+ tests) + `notebooks/03_features.ipynb` —
+  per-customer rollup anchored to 2012-01-01; the 3 lanes (core R/F/M/Tenure → log1p+RobustScaler;
+  CLV inputs raw freq=inv−1/recency=t_x/T/monetary; supporting: wholesaler flag + return-rate +
+  country) per docs 04/09/15/16/17. Watch: Tenure=first→anchor; AvgBasket profiling-only (=M/F).
 - **Coding conventions in play:** hybrid (logic in `src/` unit-tested via `pytest -m "not slow"`; notebooks
   thin, call src). Notebooks authored as jupytext `.py` (percent) → `jupytext --to notebook --execute` →
   `.ipynb` WITH outputs (commit both). Processed data → Parquet in data/processed (gitignored; ~4s reload
