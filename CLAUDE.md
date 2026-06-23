@@ -19,6 +19,15 @@
   per-customer rollup anchored to 2012-01-01; the 3 lanes (core R/F/M/Tenure → log1p+RobustScaler;
   CLV inputs raw freq=inv−1/recency=t_x/T/monetary; supporting: wholesaler flag + return-rate +
   country) per docs 04/09/15/16/17. Watch: Tenure=first→anchor; AvgBasket profiling-only (=M/F).
+  **Phase 3 (FEATURES) DONE & pushed:** `src/features.py` = build_core_features / build_clv_inputs
+  (via PyMC-Marketing `rfm_summary`, day-based) / build_supporting_features / scale_features — 4 funcs,
+  8 fast tests. `03_features.ipynb` Feature-EDA confirmed: LOG_COLS = F/M only (Recency raw skew 0.89;
+  Tenure NOT logged — logging WORSENS it −0.62→−1.65); F–M corr 0.85 (H3 ✓); AvgBasket excluded
+  (definitional M/F redundancy — correlation doesn't show it under log1p, was an overclaim, fixed);
+  54 wholesalers (0.9%, >1169 units/invoice, IQR cutoff). Saved core_features / clustering_matrix /
+  clv_inputs / supporting_features (.parquet) + `scaler_robust.joblib` to data/processed (gitignored).
+  NEXT = Phase 4 CLUSTERING: `src/clustering.py` + `04_clustering.ipynb` — K-Means/GMM/Ward on the
+  clustering_matrix, choose K by triangulation (docs 10, 11).
 - **Coding conventions in play:** hybrid (logic in `src/` unit-tested via `pytest -m "not slow"`; notebooks
   thin, call src). Notebooks authored as jupytext `.py` (percent) → `jupytext --to notebook --execute` →
   `.ipynb` WITH outputs (commit both). Processed data → Parquet in data/processed (gitignored; ~4s reload

@@ -19,7 +19,7 @@
 # **Phase 3.** Build the per-customer feature table in **three lanes** (doc 17) and run the
 # **Feature-EDA checkpoint** that *justifies* the transforms before clustering:
 # - **skew** → which columns get `log1p` (doc 09)
-# - **correlations** → confirm the AvgBasket = M/F redundancy (doc 09)
+# - **correlations** → AvgBasket=M/F redundancy is definitional; check F–M / Tenure structure (doc 09)
 # - **wholesaler tail** → decide the bulk-flag cutoff (doc 17)
 #
 # Logic lives in `src/features.py` (unit-tested); this notebook runs it, makes the EDA-driven
@@ -93,7 +93,7 @@ plt.show()
 # it adds independent signal** (it stays a clustering feature, not dropped).
 
 # %%
-log_all = np.log1p(core)   # log of all 5 to expose the exact redundancy
+log_all = np.log1p(core)   # correlation view across all 5 (note: log1p breaks the exact M/F identity)
 corr = log_all.corr()
 fig, ax = plt.subplots(figsize=(5.2, 4.2))
 sns.heatmap(corr, annot=True, fmt=".2f", cmap="RdBu_r", center=0, vmin=-1, vmax=1, ax=ax)
