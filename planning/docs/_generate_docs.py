@@ -1027,7 +1027,6 @@ para(d, "Do the segments ALSO differ on variables the clustering never saw? If g
         "sport they play - a real finding, because you did not sort on sport.)")
 table(d, ["External variable", "Question", "Source (excluded from clustering)"], [
     ["Predicted CLV", "Differ in future value?", "the separate BG/NBD model"],
-    ["Product mix", "Buy different things?", "StockCode / Description"],
     ["Country", "Geographic skew?", "Country"],
     ["Return rate", "Return more/less?", "cancellations / returns"],
 ])
@@ -1038,7 +1037,7 @@ bullet(d, "Example: segments built only from R/F/M/Tenure show avg predicted CLV
           "also the doc-12 internal-consistency check).")
 bullet(d, "NULL result meaning: if segments differ on NO external variable, they may be arbitrary slices of "
           "the spend axis with no deeper meaning - report that honestly.")
-bullet(d, "Interview line: 'I checked separation on predicted value, product mix, and geography - things the "
+bullet(d, "Interview line: 'I checked separation on predicted value, return rate, and geography - things the "
           "model never saw - not just the features I clustered on. That is evidence the segments are real "
           "customer types, not an artifact of where I drew the lines.'")
 h2(d, "(Tier 3) Agreement with rule-based RFM")
@@ -1107,7 +1106,7 @@ table(d, ["#", "Criterion", "Met when"], [
 ])
 h2(d, "What 'good' beats")
 bullet(d, "GOOD (even if modest): 'The data is largely a continuum; only 3 robust segments survive resampling "
-          "and differ on predicted CLV and product mix - here is each profile, action, and value at stake.'")
+          "and differ on predicted CLV and geography - here is each profile, action, and value at stake.'")
 bullet(d, "BAD (even if flashy): '6 crisp, colourful segments named from a textbook' that dissolve under "
           "bootstrap, with a made-up ROI.")
 para(d, "The modest-but-honest result is the SUCCESSFUL one. For a PORTFOLIO piece especially, the grade comes "
@@ -1296,7 +1295,7 @@ h1(d, "The unifying principle - core vs supporting variables")
 para(d, "The wholesaler flag is one member of a SUPPORTING-variables lane that runs alongside the core "
         "feature pipeline:")
 bullet(d, "Core lane (R/F/M/Tenure) -> drives the CLUSTERING.")
-bullet(d, "Supporting lane (wholesaler flag, Country, product mix, return-rate, predicted CLV) -> NEVER "
+bullet(d, "Supporting lane (wholesaler flag, Country, return-rate, predicted CLV) -> NEVER "
           "enters the clustering matrix, but feeds EDA, validation, profiling, and recommendations.")
 para(d, "Rule of thumb threading the whole project: a supporting variable EXPLAINS and VALIDATES the "
         "segments; it never DEFINES them. This keeps the segmentation behaviourally pure and provides a "
@@ -1329,7 +1328,7 @@ h1(d, "The three lanes (core vs supporting - doc 16)")
 table(d, ["Lane", "Features", "Destination"], [
     ["Core (clustering)", "R / F / M / Tenure (+ AvgBasket profiling-only)", "drives the CLUSTERING"],
     ["CLV inputs (raw)", "frequency / recency(t_x) / T / monetary", "the CLV model"],
-    ["Supporting", "wholesaler flag, return-rate, country, product mix", "EDA / validation / profiling"],
+    ["Supporting", "wholesaler flag, return-rate, country", "EDA / validation / profiling"],
 ])
 
 h1(d, "Core features (clustering)")
@@ -1350,12 +1349,22 @@ table(d, ["Input", "Definition", "vs the core feature"], [
     ["T", "first -> anchor (customer age)", "now aligned with core Tenure (Decision 1)"],
     ["monetary_value", "average value per transaction", "core Monetary = total"],
 ])
-para(d, "Built via lifetimes.summary_data_from_transaction_data.")
+para(d, "SUPERSEDED by doc 18 (2026-06-21): built via pymc_marketing.clv.rfm_summary, NOT "
+        "lifetimes (now unmaintained). rfm_summary counts repeat-purchase OCCASIONS day-based "
+        "(distinct purchase days - 1), the BTYD-literature standard - so this CLV frequency differs "
+        "slightly from the invoice-based core Frequency for same-day multi-invoice customers (~55). "
+        "See doc 18 for the full library/language decision.")
 
 h1(d, "Supporting variables (doc 16) - never clustering inputs")
 bullet(d, "Wholesaler flag: median units per invoice -> flag the extreme tail; keep the continuous metric.")
 bullet(d, "Return-rate: returns / purchases (from the return signal captured during cleaning).")
-bullet(d, "Country (the customer's country); Product mix (top categories, diversity).")
+bullet(d, "Country (the customer's country).")
+bullet(d, "DROPPED (discussion #12, 2026-06-24): Product mix (top categories / diversity). The dataset has "
+          "NO category column - 4,620 StockCodes / 5,271 free-text Descriptions - so 'categories' would have "
+          "to be MANUFACTURED (keyword buckets or topic modelling), a mini-project that injects judgment-call "
+          "noise for a supporting-ONLY variable off the critical path. Doc 04 rule: every feature must be "
+          "justified - this one is not worth the noise. CLV + country + return-rate remain for external "
+          "validation, which is sufficient.")
 para(d, "These feed EDA, tier-2 validation, profiling, and recommendations - they EXPLAIN and VALIDATE the "
         "segments, never DEFINE them.")
 

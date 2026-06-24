@@ -51,8 +51,15 @@
   (3-lane fork), `two-track-modeling` (clustering ‖ CLV, no-circularity note), `validation-flow` (2 lanes),
   `segments-to-actions` (profile→name→segment×CLV grid→recommendations). PNGs in reports/figures via mmdc
   (bold title + grey italic descriptor; `&middot;`/`&times;`/`&amp;` entities render, `&rarr;` does NOT).
+- **Doc-sync decisions (2026-06-24, discussion #12):** (1) BACK-PATCHED doc 17's CLV line — it said
+  `lifetimes.summary_data_from_transaction_data` but code uses PyMC-Marketing `rfm_summary` (day-based);
+  now flagged SUPERSEDED-by-doc-18. (2) DROPPED "product mix" as a feature AND a validation dimension —
+  no category column exists (4,620 StockCodes / 5,271 free-text Descriptions), so categories would be
+  manufactured noise for a supporting-only var off the critical path (doc 04: every feature justified).
+  Removed from doc 17, doc 13 external-validation battery, project-architecture lane, and
+  `design/feature-engineering.md`; CLV + country + return-rate remain for external validation.
 - **Key principle (new):** CORE vs SUPPORTING variables — core lane (R/F/M/Tenure) drives clustering;
-  supporting lane (wholesaler flag, Country, product mix, return-rate, CLV) NEVER enters clustering,
+  supporting lane (wholesaler flag, Country, return-rate, CLV) NEVER enters clustering,
   only feeds EDA/validation/profiling/recommendations. A supporting var explains & validates segments,
   never defines them.
 - **Working pattern:** topic by topic, in depth; after each topic is decided, append a doc to

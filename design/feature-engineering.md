@@ -12,7 +12,7 @@ flowchart LR
     A["<b>Clean Transaction Table</b><br/><span style='font-size:11px;color:#6b7280;font-style:italic'>completed purchases</span>"] --> B["<b>Aggregate to Customer Level</b><br/><span style='font-size:11px;color:#6b7280;font-style:italic'>one row per customer</span>"] --> C["<b>Feature EDA</b><br/><span style='font-size:11px;color:#6b7280;font-style:italic'>verify skew, correlations, wholesaler tail</span>"]
     C --> D["<b>Core Features</b><br/><span style='font-size:11px;color:#6b7280;font-style:italic'>R / F / M / Tenure &middot; log + scale</span>"]
     C --> E["<b>CLV Inputs</b><br/><span style='font-size:11px;color:#6b7280;font-style:italic'>frequency / recency / T / monetary &middot; raw</span>"]
-    C --> F["<b>Supporting Variables</b><br/><span style='font-size:11px;color:#6b7280;font-style:italic'>wholesaler flag &middot; return-rate &middot; country &middot; product mix</span>"]
+    C --> F["<b>Supporting Variables</b><br/><span style='font-size:11px;color:#6b7280;font-style:italic'>wholesaler flag &middot; return-rate &middot; country</span>"]
     D --> G(["Clustering"])
     E --> H(["CLV model"])
     F --> I(["EDA / Validation / Profiling"])
@@ -29,7 +29,7 @@ flowchart LR
 |---|---|---|
 | **Core Features** | R / F / M / Tenure (AvgBasket profiling-only) → `log1p` + RobustScaler | **Clustering** |
 | **CLV Inputs** | frequency=inv−1 / recency=t_x / T / monetary — **raw** | **CLV model** |
-| **Supporting Variables** | wholesaler flag, return-rate, country, product mix | **EDA / Validation / Profiling** |
+| **Supporting Variables** | wholesaler flag, return-rate, country | **EDA / Validation / Profiling** |
 
 > **Feature EDA** is the checkpoint that *justifies* the transforms: it's where the RFM skew (→ `log1p`),
 > the AvgBasket=M/F redundancy, and the wholesaler tail are confirmed before features are finalised.
