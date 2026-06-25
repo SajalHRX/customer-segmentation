@@ -26,8 +26,29 @@
   (definitional M/F redundancy — correlation doesn't show it under log1p, was an overclaim, fixed);
   54 wholesalers (0.9%, >1169 units/invoice, IQR cutoff). Saved core_features / clustering_matrix /
   clv_inputs / supporting_features (.parquet) + `scaler_robust.joblib` to data/processed (gitignored).
-  NEXT = Phase 4 CLUSTERING: `src/clustering.py` + `04_clustering.ipynb` — K-Means/GMM/Ward on the
-  clustering_matrix, choose K by triangulation (docs 10, 11).
+  **Phase 4 (CLUSTERING) DONE (2026-06-24):** `src/clustering.py` = shared methods (fit_kmeans/gmm/ward,
+  labels_of, sweep_k, knee_point, gap_statistic+gap_choice, gmm_bic, bootstrap_stability,
+  consensus_matrix, ari_matrix, cophenetic_corr, pca_2d) + 12 tests (synthetic blobs, known K=3).
+  TWO notebooks mirroring docs 10/11: `04a_choosing_k` + `04b_method_comparison` (NOT one 04_).
+  **4a:** split off one-timers (1,618 = 27.6%) → cluster 4,234 repeat buyers (doc 17 ii); the
+  full-pop silhouette was HIGHER but only via the degenerate one-timer blob — diagnosed, not followed.
+  **4b/4c:** K=3 chosen by triangulation (silhouette+CH peak at 3, most stable: mean Jaccard 0.79,
+  0 dissolving; K=4 close runner-up via elbow+DB). Gap→8 and GMM-BIC→8 diagnosed as continuum /
+  GMM-singularity artifacts (diag BIC went negative), NOT followed. **04b:** at K=3 cross-method ARI
+  is MODERATE not unanimous (K-Means↔Ward 0.61; GMM diverges 0.38/0.27; cophenetic 0.54) → honest
+  "continuum, useful discretisation not natural kinds"; DEPLOY K-Means (silhouette 0.37, balanced
+  sizes); GMM 4.3% fence-sitters. Saved: clustering_matrix_main, onetimer_mask, cluster_choice.json,
+  cluster_labels (3 methods), segment_assignment (4 groups: R0/R1/R2 + one-timer). Deferred 4f
+  robustness experiments (scaler/weighting, doc 09). NEXT = Phase 5 CLV: BG/NBD + Gamma-Gamma
+  (PyMC-Marketing) on clv_inputs (docs 15, 12), then Phase 6 profile + name + cross-validate vs CLV.
+- **Phase 4 fix + teaching (2026-06-25):** (1) `04a` gap now runs from K=1 (was 2) so the gap stat can
+  return its "no clusters" verdict — gap→K=1 (continuum); CHOSEN_K unchanged (3). (2) Slow line-by-line
+  walkthrough of `src/clustering.py` with the MATH for every method, the user's rule: NOTHING hardcoded
+  + an OBSERVABLE figure per method ([[feedback-experiment-observability]]). Built 7 teaching demos in
+  `notebooks/demo_*.py` → `reports/figures/teaching/` (kmeans_lloyd, gmm_em, internal_indices,
+  gap_statistic, bic_anatomy, stability, comparison_validation) — all read K from cluster_choice.json.
+  (3) `planning/docs/Clustering_Mathematics_Reference.docx` (+ `generate_math_reference.py`, run with
+  SYSTEM python3): formula + explanation + worked example + project number for all 16 methods.
 - **Coding conventions in play:** hybrid (logic in `src/` unit-tested via `pytest -m "not slow"`; notebooks
   thin, call src). Notebooks authored as jupytext `.py` (percent) → `jupytext --to notebook --execute` →
   `.ipynb` WITH outputs (commit both). Processed data → Parquet in data/processed (gitignored; ~4s reload
