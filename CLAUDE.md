@@ -59,8 +59,15 @@
   clustering's 1,618) — BG/NBD includes them, Gamma-Gamma excludes → population-mean spend fallback.
   **MAP results:** r=0.64 α=62 a=0.15 b=2.76; mean P(alive)=0.89 (2.7% churned); CLV mean £1,396
   median £536 (one-timer £311 vs repeat £1,831). 5 observable figs in reports/figures/05_clv/
-  (gamma_gamma_gate, bgnbd_outputs, bgnbd_brain, gamma_gamma_shrinkage, clv_components). NEXT = 05a
-  temporal-holdout validation (3/6/9mo, doc 08), then 05b production MCMC + clv_predictions.parquet.
+  (gamma_gamma_gate, bgnbd_outputs, bgnbd_brain, gamma_gamma_shrinkage, clv_components).
+- **05a validation DONE (2026-06-26):** `evaluate_cutoff` + `calibration_by_frequency` in src/clv.py;
+  `05a_clv_validation.ipynb` runs 3/6/9-mo temporal holdouts. **Honest finding:** calibration SHAPE
+  excellent (model ranks customers well) but a vertical bias (3mo ×0.77 under, 6mo ×0.98, 9mo ×1.12
+  over) = **seasonality** (gift-ware Christmas peak; BG/NBD assumes constant rate, doc 15) — averages
+  out over the 12-mo horizon. r/α stable, a/b drift smoothly with calibration length. Figs in
+  reports/figures/05a_clv_validation/. Also added `planning/docs/CLV_Mathematics_Reference.docx`
+  (+generator, SYSTEM python3) and root `PHASE5_READING_GUIDE.md`. NEXT = 05b production MCMC +
+  posterior predictive checks + clv_predictions.parquet.
 - **Coding conventions in play:** hybrid (logic in `src/` unit-tested via `pytest -m "not slow"`; notebooks
   thin, call src). Notebooks authored as jupytext `.py` (percent) → `jupytext --to notebook --execute` →
   `.ipynb` WITH outputs (commit both). Processed data → Parquet in data/processed (gitignored; ~4s reload

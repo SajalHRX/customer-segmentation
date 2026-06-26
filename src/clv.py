@@ -186,3 +186,65 @@ def predict_clv(gg_model, bg_nbd_model, clv_df: pd.DataFrame, future_t_months: i
         purchases = predict_purchases(bg_nbd_model, one_timers, future_t=horizon_days)
         out.loc[one_timers.index] = (purchases * pop_mean).values
     return out
+
+
+# --------------------------------------------------------------------------- temporal-holdout validation (doc 08)
+def evaluate_cutoff(transactions: pd.DataFrame, months: int,
+                    customer_id_col: str = "Customer ID", datetime_col: str = "InvoiceDate",
+                    fit_method: str = "map") -> dict:
+    """Backtest BG/NBD at one holdout length — the credibility experiment (doc 08).
+
+    Split the timeline ``months`` before the data ends: fit on the CALIBRATION period (before the
+    cutoff), then predict each customer's purchases in the HOLDOUT period and compare to what they
+    ACTUALLY did. Returns the enriched per-customer table (with a ``predicted`` column), the fitted
+    parameters, and aggregate totals.
+
+    IMPORTANT (doc 08): do NOT rank cutoffs by raw error — a shorter holdout looks "better" only
+    because predicting fewer months is easier. Judge CALIBRATION (predicted vs actual by frequency
+    bin) and PARAMETER STABILITY instead, which are horizon-fair.
+    """
+    from pymc_marketing.clv import BetaGeoModel, rfm_train_test_split
+
+    obs_end = pd.Timestamp(transactions[datetime_col].max()).normalize()
+    train_end = obs_end - pd.DateOffset(months=months)
+    split = rfm_train_test_split(
+        transactions, customer_id_col=customer_id_col, datetime_col=datetime_col,
+        train_period_end=train_end, test_period_end=obs_end,
+    )
+    cal = split[["customer_id", "frequency", "recency", "T"]]
+    model = BetaGeoModel(data=cal)
+    model.fit(method=fit_method)
+
+    holdout_days = int(round(float(split["test_T"].iloc[0])))
+    pred = model.expected_purchases(data=cal, future_t=holdout_days)
+    split = split.copy()
+    split["predicted"] = _per_customer(pred, split.index, "predicted").values
+
+    params = {v: float(model.idata.posterior[v].mean()) for v in ["r", "alpha", "a", "b"]}
+    return {
+        "months": months,
+        "train_end": train_end,
+        "holdout_days": holdout_days,
+        "n_customers": int(len(split)),
+        "split": split,
+        "params": params,
+        "total_predicted": float(split["predicted"].sum()),
+        "total_actual": float(split["test_frequency"].sum()),
+        "mae": float((split["predicted"] - split["test_frequency"]).abs().mean()),
+    }
+
+
+def calibration_by_frequency(split: pd.DataFrame, max_freq: int = 7) -> pd.DataFrame:
+    """Mean predicted vs actual holdout purchases, grouped by CALIBRATION frequency (doc 08 plot).
+
+    A well-calibrated model has, within each frequency bin, mean predicted ≈ mean actual — i.e. the
+    points hug the diagonal. Calibration frequencies above ``max_freq`` are collapsed into one bin
+    (the high-frequency tail is sparse).
+    """
+    s = split.copy()
+    s["freq_bin"] = s["frequency"].clip(upper=max_freq)
+    return s.groupby("freq_bin").agg(
+        predicted=("predicted", "mean"),
+        actual=("test_frequency", "mean"),
+        n=("predicted", "size"),
+    )
