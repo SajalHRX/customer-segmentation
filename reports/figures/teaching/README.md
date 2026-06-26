@@ -23,6 +23,7 @@ the chosen K from `data/processed/cluster_choice.json`.
 | `bic_anatomy.png` | BIC by covariance type; −2ℓ vs p·ln n trade-off | **all-K** | `demo_gap_bic.py` | B6 |
 | `stability.png` (+ `_k4`,`_k5`) | (A) bootstrap Jaccard per cluster · (B) consensus at K · (C) consensus over-split (K+5) | **K-specific** | `demo_stability.py` | C1–C2 |
 | `comparison_validation.png` (+ `_k4`,`_k5`) | (A) ARI 3×3 · (B) ARI-vs-RI under corruption *(A/B K-specific)* · (C) cophenetic · (D) PCA biplot *(C/D K-independent)* | **mixed** | `demo_comparison.py` | C3–C5 |
+| `onetimer_degeneracy.png` | why one-timers are split off: Recency=Tenure, Frequency=1, covariance is rank-2 not 4 | **K-independent** | `demo_onetimer_degeneracy.py` | doc 17 / 04a step 4a |
 
 > Pipeline (non-teaching) figures live in `reports/figures/04a_choosing_k/` and
 > `reports/figures/04b_method_comparison/` — the actual decision artifacts from the notebooks.
@@ -39,7 +40,7 @@ cd ~/customer-segmentation
 ```
 
 The K-specific demos are: `demo_kmeans_lloyd`, `demo_gmm_em`, `demo_internal_indices`,
-`demo_stability`, `demo_comparison`. The all-K demo is `demo_gap_bic` (no K argument).
+`demo_stability`, `demo_comparison`. The K-independent demos (no K argument) are `demo_gap_bic` and `demo_onetimer_degeneracy`.
 
 ## Cross-K takeaway (K=3 vs 4 vs 5)
 
