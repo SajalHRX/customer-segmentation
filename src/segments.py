@@ -155,3 +155,54 @@ def rfm_quintile_segments(df: pd.DataFrame) -> pd.Series:
     f = pd.qcut(df["Frequency"].rank(method="first"), 5, labels=[1, 2, 3, 4, 5]).astype(int)
     m = pd.qcut(df["Monetary"], 5, labels=[1, 2, 3, 4, 5], duplicates="drop").astype(int)
     return (r + f + m).rename("RFM_score")
+
+
+# --------------------------------------------------------------------------- Stage 3: actions (docs 12, 14)
+# One segment, one clear action — clarity is the deliverable (doc 14 §3). Spend follows VALUE AT STAKE
+# (revenue + CLV share), not headcount; the segment × CLV grid refines intensity within a segment.
+SEGMENT_ACTIONS = {
+    "R0": "Protect",     # Champions — retain / VIP, do NOT discount (they would buy anyway)
+    "R1": "Grow",        # Rising — nurture the newest high-potential into Champions
+    "R2": "Win-back",    # At-Risk — reactivate, prioritising the high-CLV lapsers
+    "one-timer": "Convert",  # One-Timers — low-cost second-purchase nudge; do not overspend
+}
+
+
+def assign_customer_actions(df: pd.DataFrame) -> pd.DataFrame:
+    """Attach persona, action, and a within-segment CLV tier to every customer (docs 12, 14).
+
+    The CLV tier (Low/Mid/High terciles *within* each segment) is the grid's second axis: it sets the
+    intensity of the segment's action — e.g. a High-CLV At-Risk customer is the best place to spend a
+    retention pound, a Low-CLV one is not worth chasing.
+    """
+    out = df.copy()
+    out["persona"] = out["segment"].map(SEGMENT_NAMES).astype("category")
+    out["action"] = out["segment"].map(SEGMENT_ACTIONS).astype("category")
+    out["clv_tier"] = out.groupby("segment", observed=True)["clv"].transform(
+        lambda s: pd.qcut(s.rank(method="first"), 3, labels=["Low", "Mid", "High"]))
+    return out
+
+
+def value_at_stake(df: pd.DataFrame) -> pd.DataFrame:
+    """Per-segment headcount / revenue / CLV shares — the lens for budgeting (doc 14 §3).
+
+    Spend should follow money on the line (revenue now + CLV future), NOT headcount: prioritising by
+    headcount would pour budget into the ~28% one-timers who are barely worth anything.
+    """
+    n_total, rev_total, clv_total = len(df), df["Monetary"].sum(), df["clv"].sum()
+    g = df.groupby("segment", observed=True)
+    out = pd.DataFrame({
+        "persona": [SEGMENT_NAMES[s] for s in g.size().index],
+        "action": [SEGMENT_ACTIONS[s] for s in g.size().index],
+        "headcount_pct": (g.size() / n_total * 100).round(1),
+        "rev_share_pct": (g["Monetary"].sum() / rev_total * 100).round(1),
+        "clv_share_pct": (g["clv"].sum() / clv_total * 100).round(1),
+    })
+    return out
+
+
+def segment_clv_grid(df: pd.DataFrame, value: str = "clv", aggfunc: str = "sum") -> pd.DataFrame:
+    """The segment × CLV-tier grid (doc 12) — value (or count) in each segment × Low/Mid/High cell."""
+    d = df if "clv_tier" in df else assign_customer_actions(df)
+    return d.pivot_table(index="segment", columns="clv_tier", values=value, aggfunc=aggfunc,
+                         observed=True)

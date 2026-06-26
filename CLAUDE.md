@@ -87,8 +87,15 @@
   **Tier C (gold standard): CLV η²=0.62 — strong NON-circular separation (the free cross-validation
   fires); rule-RFM agreement Cramér V=0.61/ARI=0.40; honest NULL: Country V=0.09**. No secret twins
   (max|δ|≥0.94); Rising vs At-Risk separated purely by lifecycle (Recency/Tenure, not RFM magnitude).
-  Figs in reports/figures/06a_profiling/. Bug fixed: cramers_v needs correction=False (Yates). NEXT =
-  06b segment×CLV action grid + recommendations (Protect/Grow/Nurture/Win-back) + success criteria.
+  Figs in reports/figures/06a_profiling/. Bug fixed: cramers_v needs correction=False (Yates).
+- **Phase 6 Stage 3 (06b) DONE — PROJECT COMPLETE (2026-06-27):** src/segments.py +
+  assign_customer_actions / value_at_stake / segment_clv_grid (+SEGMENT_ACTIONS), 8 tests total.
+  `06b_recommendations.ipynb`: **action grid** (Champions→Protect, Rising→Grow, At-Risk→Win-back,
+  One-Timers→Convert); spend follows VALUE AT STAKE not headcount (segments ~equal headcount 21–28%
+  but Champions=81% rev/72% CLV); segment×CLV grid (richest cell High-CLV Champions ~£4.5M; High-CLV
+  At-Risk ~£0.26M = prime win-back). Hypothetical ROI flagged. Success criteria (doc 14 §4) met.
+  Saved **customer_segments_actions.parquet** (5852×10: persona/segment/RFM/p_alive/clv/clv_tier/
+  action) = the final deliverable. Fig value_at_stake.png. All 35 tests pass. Phases 1–6 all done.
 - **Coding conventions in play:** hybrid (logic in `src/` unit-tested via `pytest -m "not slow"`; notebooks
   thin, call src). Notebooks authored as jupytext `.py` (percent) → `jupytext --to notebook --execute` →
   `.ipynb` WITH outputs (commit both). Processed data → Parquet in data/processed (gitignored; ~4s reload

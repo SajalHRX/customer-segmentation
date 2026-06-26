@@ -71,3 +71,24 @@ def test_classifier_separation_recovers_blobs():
     df["segment"] = y
     res = segments.classifier_separation(df, features=["Recency", "Frequency"])
     assert res["cv_accuracy"] > 0.9 and res["cv_accuracy"] > res["baseline"]
+
+
+def test_value_at_stake_shares_and_actions():
+    vs = segments.value_at_stake(_toy())
+    assert vs.loc["R0", "action"] == "Protect"
+    assert vs.loc["one-timer", "action"] == "Convert"
+    assert abs(vs["rev_share_pct"].sum() - 100) < 0.5
+
+
+def test_assign_customer_actions_adds_columns_and_tiers():
+    rng = np.random.default_rng(0)
+    n = 30
+    df = pd.DataFrame({
+        "segment": pd.Categorical(["R0"] * n + ["R1"] * n, categories=segments.SEGMENT_ORDER, ordered=True),
+        "Monetary": rng.uniform(100, 5000, 2 * n),
+        "clv": rng.uniform(50, 3000, 2 * n),
+    })
+    out = segments.assign_customer_actions(df)
+    assert {"persona", "action", "clv_tier"} <= set(out.columns)
+    assert set(out["clv_tier"].cat.categories) == {"Low", "Mid", "High"}
+    assert out.loc[out.segment == "R0", "action"].iloc[0] == "Protect"
