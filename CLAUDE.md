@@ -49,6 +49,18 @@
   gap_statistic, bic_anatomy, stability, comparison_validation) — all read K from cluster_choice.json.
   (3) `planning/docs/Clustering_Mathematics_Reference.docx` (+ `generate_math_reference.py`, run with
   SYSTEM python3): formula + explanation + worked example + project number for all 16 methods.
+- **Phase 5 (CLV) IN PROGRESS — engine built (2026-06-26):** `src/clv.py` = the value track (docs 15/12/08),
+  SEPARATE from clustering (no circularity). Functions: repeat_buyers, one_timer_share, gamma_gamma_gate,
+  prepare_clv_data, fit_bg_nbd, predict_alive, predict_purchases, fit_gamma_gamma, predict_spend,
+  predict_clv. 6 tests. Decisions: **MAP while building → MCMC for final**; horizon **12 months**
+  (HORIZON_DAYS=365); discounting deferred (d=0, param ready); R/CLVTools cross-check = end-stage stretch.
+  **Gamma-Gamma gate:** Pearson 0.021 PASSES (<0.30) but Spearman 0.254 + binned medians £244→£418 =
+  mild monotonic caveat (reported, not hidden). **One-timers:** 1,673 (28.6%, day-based freq vs
+  clustering's 1,618) — BG/NBD includes them, Gamma-Gamma excludes → population-mean spend fallback.
+  **MAP results:** r=0.64 α=62 a=0.15 b=2.76; mean P(alive)=0.89 (2.7% churned); CLV mean £1,396
+  median £536 (one-timer £311 vs repeat £1,831). 5 observable figs in reports/figures/05_clv/
+  (gamma_gamma_gate, bgnbd_outputs, bgnbd_brain, gamma_gamma_shrinkage, clv_components). NEXT = 05a
+  temporal-holdout validation (3/6/9mo, doc 08), then 05b production MCMC + clv_predictions.parquet.
 - **Coding conventions in play:** hybrid (logic in `src/` unit-tested via `pytest -m "not slow"`; notebooks
   thin, call src). Notebooks authored as jupytext `.py` (percent) → `jupytext --to notebook --execute` →
   `.ipynb` WITH outputs (commit both). Processed data → Parquet in data/processed (gitignored; ~4s reload
