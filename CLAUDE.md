@@ -78,6 +78,17 @@
   **clv_predictions.parquet** (5852×7: p_alive, expected_purchases, clv — each w/ estimation bounds).
   NEXT = Phase 6: join clv_predictions to segment_assignment on Customer ID → profile + name segments
   + segment×CLV grid + free cross-validation (docs 12, 13).
+- **Phase 6 Stage 1+2 (06a) DONE (2026-06-27):** `src/segments.py` (load_segment_panel, profile_table,
+  kruskal_effect_sizes, cliffs_delta, classifier_separation, cramers_v, rfm_quintile_segments) + 6
+  tests; `06a_profiling_validation.ipynb`. **4 named personas** (data-derived): R0=Champions (26.7%,
+  80.7% rev / 71.7% CLV), R1=Rising (recent+newest, CLV share 16.4% = 2× rev 7.9%), R2=At-Risk
+  (lapsed ~1yr, p_alive 0.80), one-timer=One-Timers. **Validation:** Tier A all features large η²
+  (Freq 0.85 > Mon 0.70 > Ten 0.53 > Rec 0.48); Tier B RF 98.4% CV acc (partly circular, flagged);
+  **Tier C (gold standard): CLV η²=0.62 — strong NON-circular separation (the free cross-validation
+  fires); rule-RFM agreement Cramér V=0.61/ARI=0.40; honest NULL: Country V=0.09**. No secret twins
+  (max|δ|≥0.94); Rising vs At-Risk separated purely by lifecycle (Recency/Tenure, not RFM magnitude).
+  Figs in reports/figures/06a_profiling/. Bug fixed: cramers_v needs correction=False (Yates). NEXT =
+  06b segment×CLV action grid + recommendations (Protect/Grow/Nurture/Win-back) + success criteria.
 - **Coding conventions in play:** hybrid (logic in `src/` unit-tested via `pytest -m "not slow"`; notebooks
   thin, call src). Notebooks authored as jupytext `.py` (percent) → `jupytext --to notebook --execute` →
   `.ipynb` WITH outputs (commit both). Processed data → Parquet in data/processed (gitignored; ~4s reload
