@@ -27,7 +27,11 @@ from sklearn.metrics import silhouette_samples
 from src import clustering, utils
 
 SEED = utils.RANDOM_SEED
-K = json.load(open(utils.DATA_PROCESSED / "cluster_choice.json"))["chosen_k"]
+# Default to the chosen K; override with `python demo_internal_indices.py <K>` (K=3/4/5). Only the
+# silhouette-anatomy panel (A) is K-specific; panels B/C/D sweep all of K_RANGE regardless.
+CHOSEN = json.load(open(utils.DATA_PROCESSED / "cluster_choice.json"))["chosen_k"]
+K = int(sys.argv[1]) if len(sys.argv) > 1 else CHOSEN
+SUFFIX = "" if K == CHOSEN else f"_k{K}"
 K_RANGE = range(2, 9)            # doc 10's sane business search range (2–8), not an answer
 X = pd.read_parquet(utils.DATA_PROCESSED / "clustering_matrix_main.parquet")
 
@@ -104,5 +108,5 @@ fig.suptitle("Internal K-selection indices — observed on the real repeat-buyer
 fig.tight_layout()
 out = utils.REPORTS_FIGURES / "teaching"
 out.mkdir(parents=True, exist_ok=True)
-fig.savefig(out / "internal_indices.png", dpi=150, bbox_inches="tight")
-print("saved:", out / "internal_indices.png")
+fig.savefig(out / f"internal_indices{SUFFIX}.png", dpi=150, bbox_inches="tight")
+print("saved:", out / f"internal_indices{SUFFIX}.png")

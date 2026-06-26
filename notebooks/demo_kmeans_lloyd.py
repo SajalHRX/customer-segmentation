@@ -18,13 +18,17 @@ import pandas as pd
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from matplotlib.colors import to_rgba
 from sklearn.decomposition import PCA
 
 from src import utils
 
 SEED = utils.RANDOM_SEED
-# No hardcoded K: read the chosen K from the Phase-4a decision artifact.
-K = json.load(open(utils.DATA_PROCESSED / "cluster_choice.json"))["chosen_k"]
+# No hardcoded K: default to the chosen K from the Phase-4a decision; allow an override via
+# `python demo_kmeans_lloyd.py <K>` to compare K=3/4/5. Output filename gets a _k<K> suffix when overridden.
+CHOSEN = json.load(open(utils.DATA_PROCESSED / "cluster_choice.json"))["chosen_k"]
+K = int(sys.argv[1]) if len(sys.argv) > 1 else CHOSEN
+SUFFIX = "" if K == CHOSEN else f"_k{K}"
 
 # Real repeat-buyer matrix (scaled R/F/M/Tenure), projected to 2-D for the picture.
 X4 = pd.read_parquet(utils.DATA_PROCESSED / "clustering_matrix_main.parquet").to_numpy()
@@ -53,7 +57,9 @@ print(f"converged in {len(history)} iterations")
 print("inertia per iteration:", [round(j) for j in inertias])
 
 # --- Plot: 5 iteration snapshots + the inertia curve ---------------------------------------
-colors = np.array(["#4f81a3", "#c0504d", "#9bbb59"])
+# K-flexible palette (first 3 match the original 3-cluster colours, so K=3 is unchanged).
+_PALETTE = ["#4f81a3", "#c0504d", "#9bbb59", "#8064a2", "#4bacc6", "#f79646", "#7f7f7f"]
+colors = np.array([to_rgba(c) for c in _PALETTE[:K]])
 snaps = sorted(set([0, 1, 2, min(4, len(history) - 1), len(history) - 1]))
 fig, axes = plt.subplots(2, 3, figsize=(13, 7.5))
 axes = axes.flat
@@ -80,10 +86,10 @@ axj.set_xlabel("iteration"); axj.set_ylabel("J = within-cluster SS")
 for ax in axes[len(snaps) + 1:]:
     ax.axis("off")
 
-fig.suptitle("K-Means as EM: E-step (assign) + M-step (move centroid), K=3, repeat buyers (PCA 2-D)",
+fig.suptitle(f"K-Means as EM: E-step (assign) + M-step (move centroid), K={K}, repeat buyers (PCA 2-D)",
              fontsize=13)
 fig.tight_layout()
 out = utils.REPORTS_FIGURES / "teaching"
 out.mkdir(parents=True, exist_ok=True)
-fig.savefig(out / "kmeans_lloyd.png", dpi=150, bbox_inches="tight")
-print("saved:", out / "kmeans_lloyd.png")
+fig.savefig(out / f"kmeans_lloyd{SUFFIX}.png", dpi=150, bbox_inches="tight")
+print("saved:", out / f"kmeans_lloyd{SUFFIX}.png")

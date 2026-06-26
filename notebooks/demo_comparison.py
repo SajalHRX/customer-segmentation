@@ -31,7 +31,11 @@ from src import clustering, utils
 
 SEED = utils.RANDOM_SEED
 rng = np.random.default_rng(SEED)
-K = json.load(open(utils.DATA_PROCESSED / "cluster_choice.json"))["chosen_k"]
+# Default to the chosen K; override with `python demo_comparison.py <K>` (K=3/4/5). Panels A (ARI) and
+# B (corruption) are K-specific; C (cophenetic) and D (PCA biplot) are K-independent (unchanged).
+CHOSEN = json.load(open(utils.DATA_PROCESSED / "cluster_choice.json"))["chosen_k"]
+K = int(sys.argv[1]) if len(sys.argv) > 1 else CHOSEN
+SUFFIX = "" if K == CHOSEN else f"_k{K}"
 X = pd.read_parquet(utils.DATA_PROCESSED / "clustering_matrix_main.parquet")
 Xnp = X.to_numpy()
 n = len(X)
@@ -109,5 +113,5 @@ fig.suptitle("Comparison & validation methods — observed on the real repeat-bu
 fig.tight_layout()
 out = utils.REPORTS_FIGURES / "teaching"
 out.mkdir(parents=True, exist_ok=True)
-fig.savefig(out / "comparison_validation.png", dpi=150, bbox_inches="tight")
-print("\nsaved:", out / "comparison_validation.png")
+fig.savefig(out / f"comparison_validation{SUFFIX}.png", dpi=150, bbox_inches="tight")
+print("\nsaved:", out / f"comparison_validation{SUFFIX}.png")

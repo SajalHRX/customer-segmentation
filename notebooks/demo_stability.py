@@ -26,7 +26,10 @@ from src import clustering, utils
 
 SEED = utils.RANDOM_SEED
 rng = np.random.default_rng(SEED)
-K = json.load(open(utils.DATA_PROCESSED / "cluster_choice.json"))["chosen_k"]
+# Default to the chosen K; override with `python demo_stability.py <K>` (K=3/4/5).
+CHOSEN = json.load(open(utils.DATA_PROCESSED / "cluster_choice.json"))["chosen_k"]
+K = int(sys.argv[1]) if len(sys.argv) > 1 else CHOSEN
+SUFFIX = "" if K == CHOSEN else f"_k{K}"
 K_OVER = K + 5                                   # an obviously over-split K for contrast
 X = pd.read_parquet(utils.DATA_PROCESSED / "clustering_matrix_main.parquet")
 
@@ -72,5 +75,5 @@ fig.suptitle("Cluster stability — does the partition reproduce? (observed on r
 fig.tight_layout()
 out = utils.REPORTS_FIGURES / "teaching"
 out.mkdir(parents=True, exist_ok=True)
-fig.savefig(out / "stability.png", dpi=150, bbox_inches="tight")
-print("saved:", out / "stability.png")
+fig.savefig(out / f"stability{SUFFIX}.png", dpi=150, bbox_inches="tight")
+print("saved:", out / f"stability{SUFFIX}.png")

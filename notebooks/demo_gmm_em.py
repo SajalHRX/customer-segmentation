@@ -18,6 +18,7 @@ import pandas as pd
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from matplotlib.colors import to_rgba
 from matplotlib.patches import Ellipse
 from scipy.stats import multivariate_normal
 from sklearn.decomposition import PCA
@@ -26,17 +27,19 @@ from src import utils
 
 SEED = utils.RANDOM_SEED
 REG = 1e-6   # reg_covar: tiny ridge on Σ to prevent singular collapse (doc 11)
-# No hardcoded K: read the chosen K from the Phase-4a decision artifact.
-K = json.load(open(utils.DATA_PROCESSED / "cluster_choice.json"))["chosen_k"]
+# No hardcoded K: default to the chosen K; override with `python demo_gmm_em.py <K>` (K=3/4/5).
+CHOSEN = json.load(open(utils.DATA_PROCESSED / "cluster_choice.json"))["chosen_k"]
+K = int(sys.argv[1]) if len(sys.argv) > 1 else CHOSEN
+SUFFIX = "" if K == CHOSEN else f"_k{K}"
 
 X4 = pd.read_parquet(utils.DATA_PROCESSED / "clustering_matrix_main.parquet").to_numpy()
 P = PCA(n_components=2, random_state=SEED).fit_transform(X4)
 n = len(P)
 
-# base colours as RGB so we can BLEND them by responsibility (soft membership).
-base_rgb = np.array([[0.31, 0.51, 0.64],   # blue
-                     [0.75, 0.31, 0.30],   # red
-                     [0.61, 0.73, 0.35]])  # green
+# base colours as RGB so we can BLEND them by responsibility (soft membership). K-flexible: first
+# 3 match the original blue/red/green so K=3 is unchanged.
+_PALETTE = ["#4f81a3", "#c0504d", "#9bbb59", "#8064a2", "#4bacc6", "#f79646", "#7f7f7f"]
+base_rgb = np.array([to_rgba(c)[:3] for c in _PALETTE[:K]])
 
 # --- initialise: spread means, CIRCULAR covariances (so we can watch them become ovals) ------
 rng = np.random.default_rng(SEED)
@@ -116,9 +119,9 @@ for ax in axes[len(snaps) + 1:]:
     ax.axis("off")
 
 fig.suptitle("EM for a Gaussian Mixture: soft membership (colour blend) + covariance ellipses, "
-             "K=3, repeat buyers (PCA 2-D)", fontsize=12.5)
+             f"K={K}, repeat buyers (PCA 2-D)", fontsize=12.5)
 fig.tight_layout()
 out = utils.REPORTS_FIGURES / "teaching"
 out.mkdir(parents=True, exist_ok=True)
-fig.savefig(out / "gmm_em.png", dpi=150, bbox_inches="tight")
-print("saved:", out / "gmm_em.png")
+fig.savefig(out / f"gmm_em{SUFFIX}.png", dpi=150, bbox_inches="tight")
+print("saved:", out / f"gmm_em{SUFFIX}.png")
