@@ -234,6 +234,21 @@ def evaluate_cutoff(transactions: pd.DataFrame, months: int,
     }
 
 
+def posterior_summary(da, index: pd.Index, name: str,
+                      lower: float = 0.05, upper: float = 0.95) -> pd.DataFrame:
+    """Per-customer posterior mean + credible interval from a prediction DataArray (MCMC, doc 15).
+
+    Under MCMC each prediction is a full posterior (chain × draw × customer); the mean is the point
+    estimate and the ``lower``/``upper`` quantiles give a credible interval — the uncertainty that
+    MAP cannot express. Returns columns ``name``, ``name_low``, ``name_high``.
+    """
+    reduce_dims = [dim for dim in da.dims if dim in ("chain", "draw")]
+    mean = np.asarray(da.mean(dim=reduce_dims).values).ravel()
+    lo = np.asarray(da.quantile(lower, dim=reduce_dims).values).ravel()
+    hi = np.asarray(da.quantile(upper, dim=reduce_dims).values).ravel()
+    return pd.DataFrame({name: mean, f"{name}_low": lo, f"{name}_high": hi}, index=index)
+
+
 def calibration_by_frequency(split: pd.DataFrame, max_freq: int = 7) -> pd.DataFrame:
     """Mean predicted vs actual holdout purchases, grouped by CALIBRATION frequency (doc 08 plot).
 

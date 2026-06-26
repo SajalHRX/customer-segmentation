@@ -66,8 +66,18 @@
   over) = **seasonality** (gift-ware Christmas peak; BG/NBD assumes constant rate, doc 15) — averages
   out over the 12-mo horizon. r/α stable, a/b drift smoothly with calibration length. Figs in
   reports/figures/05a_clv_validation/. Also added `planning/docs/CLV_Mathematics_Reference.docx`
-  (+generator, SYSTEM python3) and root `PHASE5_READING_GUIDE.md`. NEXT = 05b production MCMC +
-  posterior predictive checks + clv_predictions.parquet.
+  (+generator, SYSTEM python3) and root `PHASE5_READING_GUIDE.md`.
+- **05b production DONE — PHASE 5 COMPLETE (2026-06-26):** `05b_clv_production.ipynb` refits BG/NBD +
+  Gamma-Gamma with **MCMC** (draws=800 tune=800 chains=4; ~8s+6s). Converged: R-hat=1.00, ESS
+  1.0–2.2k. Added `posterior_summary()` to src/clv.py. **Key correction (honesty):** distinguished
+  TWO uncertainties — ESTIMATION (credible interval on E[CLV], TIGHT ±~2% because 5,852 customers pin
+  the 4 params → ranking is confident) vs PREDICTIVE (individual outcome, WIDE ±50–150%, shrinks with
+  frequency). My earlier "£450±[120,980]" pitch was predictive, not estimation; `expected_customer_*`
+  gives estimation, `distribution_customer_spend` gives predictive. Figs: parameter_forest,
+  clv_uncertainty (panel B = predictive width 1.5→0.2 vs freq, the clean observable). Saved
+  **clv_predictions.parquet** (5852×7: p_alive, expected_purchases, clv — each w/ estimation bounds).
+  NEXT = Phase 6: join clv_predictions to segment_assignment on Customer ID → profile + name segments
+  + segment×CLV grid + free cross-validation (docs 12, 13).
 - **Coding conventions in play:** hybrid (logic in `src/` unit-tested via `pytest -m "not slow"`; notebooks
   thin, call src). Notebooks authored as jupytext `.py` (percent) → `jupytext --to notebook --execute` →
   `.ipynb` WITH outputs (commit both). Processed data → Parquet in data/processed (gitignored; ~4s reload

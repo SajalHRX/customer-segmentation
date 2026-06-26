@@ -51,6 +51,9 @@ lives in the design docs + code docstrings + `planning/docs/CLV_Mathematics_Refe
 3. **Shrinkage** — the less we know about a customer, the more we lean on the population mean.
 4. **Seasonality limit** — BG/NBD assumes none; short holdouts ending at Christmas are biased, but the
    12-month horizon averages it out (same honesty stance as Phase 4's continuum).
+5. **Two uncertainties (05b)** — ESTIMATION (credible interval on the *expected* CLV) is tight (±~2%,
+   so the ranking is confident); PREDICTIVE (an *individual's* actual outcome) is wide (±50–150%) and
+   shrinks with frequency. Conflating them is the classic error; see `clv_uncertainty.png` panel B.
 
 ## 15-minute version
 
