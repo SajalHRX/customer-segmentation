@@ -420,6 +420,7 @@ into a budget-able action grid.
 *raw* units (medians) and **name it from its actual signature** — never force textbook names.
 
 **The 4 personas (let them emerge from the table):**
+
 | Persona | Signature |
 |---|---|
 | **Champions** | recent · frequent · high-spend · 80% of revenue |
