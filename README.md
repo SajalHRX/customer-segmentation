@@ -10,9 +10,11 @@ prioritised marketing actions, surfacing every limitation honestly along the way
 > layer a *Bayesian* BG/NBD + Gamma-Gamma CLV model (PyMC-Marketing, with uncertainty) → a
 > segment × value **action grid**.
 
-> 📚 **New here, or want to teach this end-to-end?** Start with the
-> [**Teaching Handbook**](TEACHING_HANDBOOK.md) — a beginner-friendly, chapter-by-chapter guide to how
-> the whole project was built, with primers, figures to show, and exercises.
+> 📖 **Want the whole story, illustrated?** Read [**`PROJECT_READBOOK.docx`**](PROJECT_READBOOK.docx)
+> (or [the markdown](PROJECT_READBOOK.md)) — a self-contained, beginner-friendly narrative of the
+> entire build from scratch, with **every figure embedded**, the **formulas**, the reasoning, and a
+> checkpoint after each chapter. For *teaching* it (lesson plan, exercises), see the
+> [**Teaching Handbook**](TEACHING_HANDBOOK.md).
 
 ## The problem
 
@@ -83,6 +85,7 @@ documents), with two standalone **mathematics references**
 | `design/` | architecture & pipeline diagrams (the *how it's wired*) |
 | `reports/figures/` | analysis figures per phase + a `teaching/` set explaining the math, observably |
 | `data/raw,processed/` | the `.xlsx` and cleaned/feature/prediction tables (git-ignored) |
+| `PROJECT_READBOOK.docx` / `.md` | illustrated end-to-end story — every figure embedded, formulas, checkpoints |
 | `TEACHING_HANDBOOK.md` | beginner-friendly instructor's guide to the whole build (chapters + exercises) |
 | `PHASE5_READING_GUIDE.md` | how to read the CLV phase (concepts → code → analysis) |
 
