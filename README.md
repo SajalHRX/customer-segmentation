@@ -10,6 +10,10 @@ prioritised marketing actions, surfacing every limitation honestly along the way
 > layer a *Bayesian* BG/NBD + Gamma-Gamma CLV model (PyMC-Marketing, with uncertainty) → a
 > segment × value **action grid**.
 
+> 📚 **New here, or want to teach this end-to-end?** Start with the
+> [**Teaching Handbook**](TEACHING_HANDBOOK.md) — a beginner-friendly, chapter-by-chapter guide to how
+> the whole project was built, with primers, figures to show, and exercises.
+
 ## The problem
 
 A UK-based online retailer has a finite marketing budget and currently treats all customers the
@@ -79,6 +83,7 @@ documents), with two standalone **mathematics references**
 | `design/` | architecture & pipeline diagrams (the *how it's wired*) |
 | `reports/figures/` | analysis figures per phase + a `teaching/` set explaining the math, observably |
 | `data/raw,processed/` | the `.xlsx` and cleaned/feature/prediction tables (git-ignored) |
+| `TEACHING_HANDBOOK.md` | beginner-friendly instructor's guide to the whole build (chapters + exercises) |
 | `PHASE5_READING_GUIDE.md` | how to read the CLV phase (concepts → code → analysis) |
 
 ## Reproduce
